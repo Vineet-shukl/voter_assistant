@@ -26,8 +26,18 @@ LOCAL_ANSWERS: Dict[str, tuple[list[str], str]] = {
         "**Citizenship & Voting in India:**\n- Only **Indian citizens** can vote in Indian elections.\n- OCI (Overseas Citizen of India) card holders **cannot vote**.\n- **NRI (Non-Resident Indians)** who are Indian citizens CAN vote — register using **Form 6A** at [voters.eci.gov.in](https://voters.eci.gov.in) or at the Indian Embassy/Consulate."
     ),
     "registration": (
-        ["how to register", "how do i register", "register to vote", "voter registration", "naama darz", "form 6", "enrollment", "enroll"],
-        "**Voter Registration in India:**\nRegister online or offline using **Form 6** (new voters):\n\n1. **Online:** Visit [voters.eci.gov.in](https://voters.eci.gov.in) → 'New Registration'\n2. **Offline:** Visit your nearest BLO (Booth Level Officer) or Electoral Registration Officer\n3. **Via App:** Download the **Voter Helpline App** (Android/iOS)\n\n📌 **Documents needed:** Age proof, address proof, and one recent passport-size photograph.\n\n📞 **Helpline:** 1950 (toll-free)"
+        [
+            "how to register", "how do i register", "register to vote", "voter registration",
+            "naama darz", "form 6", "enrollment", "enroll", "register myself",
+            "get registered", "sign up to vote", "apply for voter",
+            # missed/late registration queries
+            "forgot to register", "forget to register", "forgot register",
+            "missed registration", "missed to register", "didn't register",
+            "did not register", "haven't registered", "not registered yet",
+            "late registration", "can i still register", "still register",
+            "registration deadline", "last date register",
+        ],
+        "**Voter Registration in India:**\nRegister online or offline using **Form 6** (new voters):\n\n1. **Online:** Visit [voters.eci.gov.in](https://voters.eci.gov.in) → 'New Registration'\n2. **Offline:** Visit your nearest BLO (Booth Level Officer) or Electoral Registration Officer\n3. **Via App:** Download the **Voter Helpline App** (Android/iOS)\n\n📌 **Documents needed:** Age proof, address proof, and one recent passport-size photograph.\n\n> ⏰ **Missed the deadline?** Registration is a continuous process in India. You can apply **any time** — ECI conducts **quarterly summary revisions** (Jan, Apr, Jul, Oct). Your name will appear on the roll after the next revision.\n\n📞 **Helpline:** 1950 (toll-free) | 🌐 [voters.eci.gov.in](https://voters.eci.gov.in)"
     ),
     "voter_id": (
         ["voter id", "epic card", "voter card", "matdata pehchan", "what is epic", "voter identity"],
