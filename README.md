@@ -26,7 +26,7 @@
 
 VoteWise India is a **conversational election assistant** built for Indian citizens. It combines a deterministic rules engine (grounded in real ECI data) with Google's Gemini AI to give fast, accurate, non-partisan answers to questions about the Indian election process.
 
-Whether you're a first-time voter at 18 or someone who just moved cities and needs to update their registration — VoteWise speaks your language.
+Whether you're a first-time voter at 18 or someone who just moved cities and needs to update their registration — VoteWise speaks your language. Literally. **It natively supports all 22 official Indian languages** via instant UI translation and language-aware AI prompting.
 
 ```
 User  ❯  "I forgot to register. Can I still vote?"
@@ -53,7 +53,7 @@ Bot   ❯  ✅ Yes! ECI runs quarterly revisions (Jan, Apr, Jul, Oct).
 ```
 ┌────────────────────────────────────────────────────────────┐
 │                   USER  (Browser / Mobile)                  │
-│          Glassmorphism Chat UI · HTML · CSS · JS            │
+│       Glassmorphism UI · 22 Languages · Quick Nav Bar       │
 └──────────────────────────┬─────────────────────────────────┘
                            │  HTTPS
                            ▼
@@ -251,14 +251,16 @@ voter_assistant/
 
 ---
 
-## ♿ Accessibility
+## ♿ Accessibility & UI/UX
 
+- **22 Indian Languages:** Dropdown selector instantly translates UI elements and instructs Gemini to respond in the chosen language.
+- **Top Quick Navigator:** Horizontal chip bar for instant 1-tap access to common queries.
 - `aria-live="polite"` on chat log for screen readers
-- Full keyboard navigation (Tab + Enter)
+- Full keyboard navigation (Tab + Enter) and bright `:focus-visible` outlines for physical D-pad phones.
+- Mobile-optimized input bars that never collapse on ultra-small screens (`< 360px` breakpoints).
 - `prefers-reduced-motion` media query respected
 - WCAG AA colour contrast ratios
 - Semantic HTML (`<main>`, `<header>`, `<form>`, `<button>`)
-- Mobile-first responsive layout
 
 ---
 
