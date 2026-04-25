@@ -1,255 +1,146 @@
 /* ===== CONFIG ===== */
-const CACHE_VERSION = "v2";
-const CACHE_TTL_MS  = 10 * 60 * 1000; // 10 min client-side cache per question
-const DEBOUNCE_MS   = 300;
+const CACHE_VERSION="v3",CACHE_TTL_MS=6e5,DEBOUNCE_MS=300;
 
 /* ===== ELEMENTS ===== */
-const chatLog          = document.getElementById("chat-log");
-const chatForm         = document.getElementById("chat-form");
-const userInput        = document.getElementById("user-input");
-const typingIndicator  = document.getElementById("typing-indicator");
-const followupsContainer = document.getElementById("followups-container");
-const themeToggle      = document.getElementById("theme-toggle");
-const sidebarOpen      = document.getElementById("sidebar-open");
-const sidebarClose     = document.getElementById("sidebar-close");
-const sidebar          = document.getElementById("sidebar");
-const stateSelect      = document.getElementById("state-select");
-const ageinput         = document.getElementById("age-input");
-const citizenCheck     = document.getElementById("citizen-check");
-const checkBtn         = document.getElementById("check-eligibility-btn");
-const eligibilityResult = document.getElementById("eligibility-result");
-const stateBadge       = document.getElementById("state-badge");
+const $=id=>document.getElementById(id);
+const chatLog=$("chat-log"),chatForm=$("chat-form"),userInput=$("user-input"),
+typingIndicator=$("typing-indicator"),followupsContainer=$("followups-container"),
+themeToggle=$("theme-toggle"),sidebarOpen=$("sidebar-open"),sidebarClose=$("sidebar-close"),
+sidebar=$("sidebar"),stateSelect=$("state-select"),ageinput=$("age-input"),
+citizenCheck=$("citizen-check"),checkBtn=$("check-eligibility-btn"),
+eligibilityResult=$("eligibility-result"),stateBadge=$("state-badge"),
+langSelect=$("lang-select");
 
 /* ===== STATE ===== */
-let conversationContext = {};
-let sendDebounceTimer   = null;
-let isSending           = false;
+let conversationContext={},sendDebounceTimer=null,isSending=false,currentLang="en";
+
+/* ===== I18N — compact UI strings for top 6 languages ===== */
+const UI_STRINGS={
+  hi:{selectState:"अपना राज्य चुनें",quickEligibility:"पात्रता जाँच",citizenLabel:"मैं भारतीय नागरिक हूँ",checkEligibility:"जाँचें",quickTopics:"त्वरित विषय",eciResources:"ECI संसाधन",disclaimer:"⚠️ डेटा ECI से। eci.gov.in पर सत्यापित करें।",poweredBy:"ECI डेटा द्वारा संचालित",inputPlaceholder:"मतदाता पंजीकरण, EPIC, चुनाव तिथियों के बारे में पूछें…",agePlaceholder:"आपकी उम्र (18+)",welcomeTitle:"नमस्ते! मैं VoteWise India हूँ — भारतीय चुनावों के लिए आपका गैर-पक्षपाती गाइड।",welcomeHelp:"मैं इसमें मदद कर सकता हूँ:",welcomeAction:"व्यक्तिगत जानकारी के लिए साइडबार से अपना राज्य चुनें!",w1:"✅ मतदाता पंजीकरण (फॉर्म 6) और EPIC",w2:"✅ राज्यवार चुनाव कार्यक्रम",w3:"✅ मतदाता सूची खोज और मतदान केंद्र",w4:"✅ EVM/VVPAT, आदर्श आचार संहिता",w5:"✅ मतदान केंद्र पर स्वीकृत वैकल्पिक ID"},
+  bn:{selectState:"আপনার রাজ্য নির্বাচন করুন",quickEligibility:"যোগ্যতা যাচাই",citizenLabel:"আমি ভারতীয় নাগরিক",checkEligibility:"যাচাই করুন",quickTopics:"দ্রুত বিষয়",eciResources:"ECI সম্পদ",disclaimer:"⚠️ তথ্য ECI থেকে। eci.gov.in-এ যাচাই করুন।",poweredBy:"ECI ডেটা দ্বারা চালিত",inputPlaceholder:"ভোটার নিবন্ধন, EPIC সম্পর্কে জিজ্ঞাসা করুন…",agePlaceholder:"আপনার বয়স (18+)",welcomeTitle:"নমস্কার! আমি VoteWise India — নির্বাচনের জন্য আপনার নিরপেক্ষ গাইড।",welcomeHelp:"আমি সাহায্য করতে পারি:",welcomeAction:"ব্যক্তিগত তথ্যের জন্য সাইডবার থেকে রাজ্য নির্বাচন করুন!",w1:"✅ ভোটার নিবন্ধন (ফর্ম 6) ও EPIC",w2:"✅ রাজ্যভিত্তিক নির্বাচনের সময়সূচি",w3:"✅ ভোটার তালিকা অনুসন্ধান",w4:"✅ EVM/VVPAT, আদর্শ আচরণবিধি",w5:"✅ বিকল্প পরিচয়পত্র"},
+  ta:{selectState:"உங்கள் மாநிலத்தைத் தேர்ந்தெடுக்கவும்",quickEligibility:"தகுதி சோதனை",citizenLabel:"நான் இந்திய குடிமகன்",checkEligibility:"சரிபார்",quickTopics:"விரைவு தலைப்புகள்",eciResources:"ECI ஆதாரங்கள்",disclaimer:"⚠️ ECI தரவு. eci.gov.in-ல் சரிபார்க்கவும்.",poweredBy:"ECI தரவால் இயக்கப்படுகிறது",inputPlaceholder:"வாக்காளர் பதிவு பற்றி கேளுங்கள்…",agePlaceholder:"உங்கள் வயது (18+)"},
+  te:{selectState:"మీ రాష్ట్రాన్ని ఎంచుకోండి",quickEligibility:"అర్హత తనిఖీ",citizenLabel:"నేను భారత పౌరుడిని",checkEligibility:"తనిఖీ",quickTopics:"త్వరిత అంశాలు",eciResources:"ECI వనరులు",disclaimer:"⚠️ ECI డేటా. eci.gov.in లో ధృవీకరించండి.",poweredBy:"ECI డేటా ద్వారా",inputPlaceholder:"ఓటరు నమోదు గురించి అడగండి…",agePlaceholder:"మీ వయస్సు (18+)"},
+  mr:{selectState:"तुमचे राज्य निवडा",quickEligibility:"पात्रता तपासा",citizenLabel:"मी भारतीय नागरिक आहे",checkEligibility:"तपासा",quickTopics:"जलद विषय",eciResources:"ECI संसाधने",disclaimer:"⚠️ डेटा ECI कडून. eci.gov.in वर खात्री करा.",poweredBy:"ECI डेटा द्वारे",inputPlaceholder:"मतदार नोंदणीबद्दल विचारा…",agePlaceholder:"तुमचे वय (18+)"},
+  gu:{selectState:"તમારું રાજ્ય પસંદ કરો",quickEligibility:"પાત્રતા ચકાસો",citizenLabel:"હું ભારતીય નાગરિક છું",checkEligibility:"ચકાસો",quickTopics:"ઝડપી વિષયો",eciResources:"ECI સંસાધનો",disclaimer:"⚠️ ECI ડેટા. eci.gov.in પર ચકાસો.",poweredBy:"ECI ડેટા દ્વારા",inputPlaceholder:"મતદાર નોંધણી વિશે પૂછો…",agePlaceholder:"તમારી ઉંમર (18+)"},
+  kn:{selectState:"ನಿಮ್ಮ ರಾಜ್ಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ",quickEligibility:"ಅರ್ಹತೆ ಪರಿಶೀಲನೆ",citizenLabel:"ನಾನು ಭಾರತೀಯ ಪ್ರಜೆ",checkEligibility:"ಪರಿಶೀಲಿಸಿ",quickTopics:"ತ್ವರಿತ ವಿಷಯಗಳು",eciResources:"ECI ಸಂಪನ್ಮೂಲಗಳು",poweredBy:"ECI ಡೇಟಾ ಮೂಲಕ",inputPlaceholder:"ಮತದಾರ ನೋಂದಣಿ ಬಗ್ಗೆ ಕೇಳಿ…",agePlaceholder:"ನಿಮ್ಮ ವಯಸ್ಸು (18+)"},
+  ml:{selectState:"നിങ്ങളുടെ സംസ്ഥാനം തിരഞ്ഞെടുക്കുക",quickEligibility:"യോഗ്യത പരിശോധന",citizenLabel:"ഞാൻ ഇന്ത്യൻ പൗരൻ",checkEligibility:"പരിശോധിക്കുക",quickTopics:"ദ്രുത വിഷയങ്ങൾ",eciResources:"ECI വിഭവങ്ങൾ",poweredBy:"ECI ഡാറ്റ വഴി",inputPlaceholder:"വോട്ടർ രജിസ്ട്രേഷൻ കുറിച്ച് ചോദിക്കൂ…",agePlaceholder:"നിങ്ങളുടെ പ്രായം (18+)"},
+  pa:{selectState:"ਆਪਣਾ ਰਾਜ ਚੁਣੋ",quickEligibility:"ਯੋਗਤਾ ਜਾਂਚ",citizenLabel:"ਮੈਂ ਭਾਰਤੀ ਨਾਗਰਿਕ ਹਾਂ",checkEligibility:"ਜਾਂਚੋ",quickTopics:"ਤੇਜ਼ ਵਿਸ਼ੇ",eciResources:"ECI ਸਰੋਤ",poweredBy:"ECI ਡੇਟਾ ਦੁਆਰਾ",inputPlaceholder:"ਵੋਟਰ ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਬਾਰੇ ਪੁੱਛੋ…",agePlaceholder:"ਤੁਹਾਡੀ ਉਮਰ (18+)"},
+  or:{selectState:"ଆପଣଙ୍କ ରାଜ୍ୟ ବାଛନ୍ତୁ",quickEligibility:"ଯୋଗ୍ୟତା ଯାଞ୍ଚ",citizenLabel:"ମୁଁ ଭାରତୀୟ ନାଗରିକ",checkEligibility:"ଯାଞ୍ଚ କରନ୍ତୁ",quickTopics:"ଦ୍ରୁତ ବିଷୟ",eciResources:"ECI ସମ୍ବଳ",poweredBy:"ECI ତଥ୍ୟ ଦ୍ୱାରା",inputPlaceholder:"ଭୋଟର ପଞ୍ଜୀକରଣ ବିଷୟରେ ପଚାରନ୍ତୁ…",agePlaceholder:"ଆପଣଙ୍କ ବୟସ (18+)"}
+};
+
+/* ===== LANGUAGE NAMES (for Gemini prompt) ===== */
+const LANG_NAMES={en:"English",hi:"Hindi",bn:"Bengali",te:"Telugu",mr:"Marathi",ta:"Tamil",ur:"Urdu",gu:"Gujarati",kn:"Kannada",ml:"Malayalam",or:"Odia",pa:"Punjabi",as:"Assamese",mai:"Maithili",sa:"Sanskrit",ne:"Nepali",sd:"Sindhi",ks:"Kashmiri",doi:"Dogri",kok:"Konkani",mni:"Manipuri",sat:"Santali",bo:"Bodo"};
+
+/* ===== APPLY LANGUAGE ===== */
+function applyLang(lang){
+  currentLang=lang;
+  const s=UI_STRINGS[lang]||{};
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const key=el.dataset.i18n;
+    if(s[key]) el.innerHTML=s[key];
+  });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el=>{
+    const key=el.dataset.i18nPh;
+    if(s[key]) el.placeholder=s[key];
+  });
+  conversationContext.language=LANG_NAMES[lang]||"English";
+  localStorage.setItem("vw-lang",lang);
+}
 
 /* ===== THEME ===== */
-const setTheme = (theme) => {
-    document.documentElement.setAttribute("data-theme", theme);
-    themeToggle.textContent = theme === "dark" ? "☀️" : "🌙";
-    localStorage.setItem("vw-theme", theme);
-};
-themeToggle.addEventListener("click", () => {
-    setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
-});
-setTheme(localStorage.getItem("vw-theme") || "dark");
+const setTheme=t=>{document.documentElement.setAttribute("data-theme",t);themeToggle.textContent=t==="dark"?"☀️":"🌙";localStorage.setItem("vw-theme",t)};
+themeToggle.addEventListener("click",()=>setTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark"));
+setTheme(localStorage.getItem("vw-theme")||"dark");
 
 /* ===== SIDEBAR ===== */
-sidebarOpen?.addEventListener("click", () => sidebar.classList.add("open"));
-sidebarClose?.addEventListener("click", () => sidebar.classList.remove("open"));
+sidebarOpen?.addEventListener("click",()=>sidebar.classList.add("open"));
+sidebarClose?.addEventListener("click",()=>sidebar.classList.remove("open"));
+
+/* ===== STATE NAMES ===== */
+const STATE_NAMES={DL:"Delhi",BR:"Bihar",WB:"West Bengal",TN:"Tamil Nadu",KL:"Kerala",AS:"Assam",UP:"Uttar Pradesh",MH:"Maharashtra",GJ:"Gujarat",RJ:"Rajasthan",KA:"Karnataka",MP:"Madhya Pradesh",PB:"Punjab"};
 
 /* ===== STATE SELECTOR ===== */
-stateSelect.addEventListener("change", () => {
-    const state = stateSelect.value;
-    if (state) {
-        conversationContext.state = state;
-        const stateName = STATE_NAMES[state] || state;
-        stateBadge.textContent = `${stateName} — ECI Data`;
-        appendBot(`📍 Got it! I'll use **${stateName}** for state-specific election schedules. What would you like to know?`, "local");
-    } else {
-        delete conversationContext.state;
-        stateBadge.textContent = "Powered by ECI Data";
-    }
+stateSelect.addEventListener("change",()=>{
+  const s=stateSelect.value;
+  if(s){conversationContext.state=s;const n=STATE_NAMES[s]||s;stateBadge.textContent=`${n} — ECI Data`;appendBot(`📍 Got it! I'll use **${n}** for state-specific info.`,"local")}
+  else{delete conversationContext.state;stateBadge.textContent="Powered by ECI Data"}
 });
 
-/* ===== QUICK TOPIC CHIPS ===== */
-document.querySelectorAll(".topic-chip").forEach(chip => {
-    chip.addEventListener("click", () => sendMessage(chip.dataset.msg));
+/* ===== TOPIC / NAV CHIPS ===== */
+document.querySelectorAll(".topic-chip,.nav-chip").forEach(c=>c.addEventListener("click",()=>{
+  sidebar.classList.remove("open");
+  sendMessage(c.dataset.msg);
+}));
+
+/* ===== LANGUAGE SELECTOR ===== */
+langSelect.addEventListener("change",()=>applyLang(langSelect.value));
+
+/* ===== ELIGIBILITY ===== */
+checkBtn.addEventListener("click",async()=>{
+  const age=parseInt(ageinput.value,10),citizen=citizenCheck.checked,state=stateSelect.value||"DL";
+  if(isNaN(age)||age<0||age>120){eligibilityResult.textContent="⚠️ Enter a valid age (0–120).";eligibilityResult.className="ineligible";eligibilityResult.classList.remove("hidden");return}
+  try{const r=await fetch(`/eligibility?age=${age}&citizen=${citizen}&state=${state}`);const d=await r.json();eligibilityResult.classList.remove("hidden");
+    if(d.eligible){eligibilityResult.textContent="✅ You appear eligible to vote!";eligibilityResult.className="eligible"}
+    else{eligibilityResult.textContent=`❌ ${d.reasons[0]}`;eligibilityResult.className="ineligible"}
+  }catch{eligibilityResult.textContent="⚠️ Could not check.";eligibilityResult.className="ineligible";eligibilityResult.classList.remove("hidden")}
 });
 
-/* ===== ELIGIBILITY CHECKER ===== */
-checkBtn.addEventListener("click", async () => {
-    const age     = parseInt(ageinput.value, 10);
-    const citizen = citizenCheck.checked;
-    const state   = stateSelect.value || "CA";
-
-    if (isNaN(age) || age < 0 || age > 120) {
-        eligibilityResult.textContent = "⚠️ Enter a valid age (0–120).";
-        eligibilityResult.className = "ineligible";
-        eligibilityResult.classList.remove("hidden");
-        return;
-    }
-
-    try {
-        const res = await fetch(`/eligibility?age=${age}&citizen=${citizen}&state=${state}`);
-        const data = await res.json();
-        eligibilityResult.classList.remove("hidden");
-        if (data.eligible) {
-            eligibilityResult.textContent = "✅ You appear eligible to vote!";
-            eligibilityResult.className = "eligible";
-        } else {
-            eligibilityResult.textContent = `❌ ${data.reasons[0]}`;
-            eligibilityResult.className = "ineligible";
-        }
-    } catch {
-        eligibilityResult.textContent = "⚠️ Could not check eligibility.";
-        eligibilityResult.className = "ineligible";
-        eligibilityResult.classList.remove("hidden");
-    }
-});
-
-/* ===== RESPONSE CACHE ===== */
-const cacheKey = (msg) => `${CACHE_VERSION}:${msg.trim().toLowerCase()}`;
-
-const getCache = (msg) => {
-    try {
-        const raw = sessionStorage.getItem(cacheKey(msg));
-        if (!raw) return null;
-        const { data, ts } = JSON.parse(raw);
-        if (Date.now() - ts > CACHE_TTL_MS) { sessionStorage.removeItem(cacheKey(msg)); return null; }
-        return data;
-    } catch { return null; }
-};
-
-const setCache = (msg, data) => {
-    try {
-        sessionStorage.setItem(cacheKey(msg), JSON.stringify({ data, ts: Date.now() }));
-    } catch { /* quota exceeded, ignore */ }
-};
+/* ===== CACHE ===== */
+const cacheKey=m=>`${CACHE_VERSION}:${m.trim().toLowerCase()}`;
+const getCache=m=>{try{const r=sessionStorage.getItem(cacheKey(m));if(!r)return null;const{data,ts}=JSON.parse(r);if(Date.now()-ts>CACHE_TTL_MS){sessionStorage.removeItem(cacheKey(m));return null}return data}catch{return null}};
+const setCache=(m,d)=>{try{sessionStorage.setItem(cacheKey(m),JSON.stringify({data:d,ts:Date.now()}))}catch{}};
 
 /* ===== UI HELPERS ===== */
-const scrollBottom = () => chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: "smooth" });
+const scrollBottom=()=>chatLog.scrollTo({top:chatLog.scrollHeight,behavior:"smooth"});
+const escapeHtml=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
-function appendUser(text) {
-    const row = document.createElement("div");
-    row.className = "msg-row user";
-    row.innerHTML = `<div class="bubble user-bubble">${escapeHtml(text)}</div>`;
-    chatLog.appendChild(row);
-    scrollBottom();
+function appendUser(t){const r=document.createElement("div");r.className="msg-row user";r.innerHTML=`<div class="bubble user-bubble">${escapeHtml(t)}</div>`;chatLog.appendChild(r);scrollBottom()}
+
+function appendBot(t,src="ai"){const r=document.createElement("div");r.className="msg-row bot";
+  const badge=src==="local"?`<span class="source-badge local">⚡ instant</span>`:`<span class="source-badge ai">🤖 AI</span>`;
+  r.innerHTML=`<div class="avatar">🗳️</div><div class="bubble bot-bubble">${marked.parse(t)}<div class="msg-meta">${badge}</div></div>`;
+  chatLog.appendChild(r);scrollBottom()}
+
+function setFollowups(chips){followupsContainer.innerHTML="";chips.slice(0,3).forEach(t=>{const b=document.createElement("button");b.className="followup-chip";b.textContent=t;b.addEventListener("click",()=>sendMessage(t));followupsContainer.appendChild(b)})}
+
+/* ===== FOLLOW-UP PICKER ===== */
+function pick_followups(r){const l=r.toLowerCase();
+  if(l.includes("form 6")||l.includes("register"))return["What documents for Form 6?","Can I register online?","Where is my BLO?"];
+  if(l.includes("epic")||l.includes("voter id"))return["How to get e-EPIC?","How to correct Voter ID?","Lost my Voter ID?"];
+  if(l.includes("evm")||l.includes("vvpat"))return["Is EVM safe?","What is VVPAT?","How to use EVM?"];
+  if(l.includes("unable")||l.includes("cannot vote"))return["How to register now?","Name not on list?","What ID do I need?"];
+  if(l.includes("lok sabha"))return["What is Vidhan Sabha?","How many Lok Sabha seats?","Next general election?"];
+  return["How do I register?","What is EPIC?","Find my polling booth?"];}
+
+/* ===== SEND MESSAGE ===== */
+async function sendMessage(text){
+  text=text.trim();if(!text||isSending)return;
+  appendUser(text);followupsContainer.innerHTML="";userInput.value="";
+  const cached=getCache(text);
+  if(cached){appendBot(cached.reply,"local");setFollowups(cached.suggested_followups||[]);return}
+  isSending=true;typingIndicator.classList.remove("hidden");scrollBottom();
+  try{
+    const res=await fetch("/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text,context:conversationContext})});
+    typingIndicator.classList.add("hidden");
+    if(!res.ok)throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();
+    appendBot(data.reply,data.source||"ai");
+    setFollowups(data.suggested_followups||pick_followups(data.reply));
+    setCache(text,data);
+  }catch(e){typingIndicator.classList.add("hidden");appendBot("⚠️ Something went wrong. Visit [eci.gov.in](https://eci.gov.in) or call **1950**.","local");console.error(e)}
+  finally{isSending=false}
 }
 
-function appendBot(text, source = "ai") {
-    const row = document.createElement("div");
-    row.className = "msg-row bot";
-    const badge = source === "local"
-        ? `<span class="source-badge local">⚡ instant</span>`
-        : `<span class="source-badge ai">🤖 AI</span>`;
-    row.innerHTML = `
-        <div class="avatar">🗳️</div>
-        <div class="bubble bot-bubble">
-            ${marked.parse(text)}
-            <div class="msg-meta">${badge}</div>
-        </div>`;
-    chatLog.appendChild(row);
-    scrollBottom();
-}
+/* ===== FORM SUBMIT ===== */
+chatForm.addEventListener("submit",e=>{e.preventDefault();clearTimeout(sendDebounceTimer);sendDebounceTimer=setTimeout(()=>sendMessage(userInput.value),DEBOUNCE_MS)});
+userInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();chatForm.dispatchEvent(new Event("submit"))}});
 
-function setFollowups(chips) {
-    followupsContainer.innerHTML = "";
-    chips.slice(0, 3).forEach(text => {
-        const btn = document.createElement("button");
-        btn.className = "followup-chip";
-        btn.textContent = text;
-        btn.addEventListener("click", () => sendMessage(text));
-        followupsContainer.appendChild(btn);
-    });
-}
+/* ===== RESTORE STATE ===== */
+const savedState=sessionStorage.getItem("vw-india-state");
+if(savedState){stateSelect.value=savedState;conversationContext.state=savedState;stateBadge.textContent=`${STATE_NAMES[savedState]||savedState} — ECI Data`}
+stateSelect.addEventListener("change",()=>sessionStorage.setItem("vw-india-state",stateSelect.value));
 
-function escapeHtml(str) {
-    return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
-
-/* ===== STATE NAMES MAP ===== */
-const STATE_NAMES = {
-    DL: "Delhi", BR: "Bihar", WB: "West Bengal", TN: "Tamil Nadu",
-    KL: "Kerala", AS: "Assam", UP: "Uttar Pradesh", MH: "Maharashtra",
-    GJ: "Gujarat", RJ: "Rajasthan", KA: "Karnataka", MP: "Madhya Pradesh", PB: "Punjab"
-};
-
-/* ===== INDIA FOLLOW-UP CHIPS ===== */
-function pick_followups(reply) {
-    const r = reply.toLowerCase();
-    if (r.includes("form 6") || r.includes("register")) {
-        return ["What documents do I need for Form 6?", "Can I register online?", "Where do I find my BLO?"];
-    }
-    if (r.includes("epic") || r.includes("voter id")) {
-        return ["How do I get a digital e-EPIC?", "How to correct my Voter ID details?", "What if I lost my Voter ID?"];
-    }
-    if (r.includes("evm") || r.includes("vvpat") || r.includes("voting machine")) {
-        return ["Is EVM voting safe?", "What is VVPAT?", "How do I use EVM on election day?"];
-    }
-    if (r.includes("deadline") || r.includes("schedule") || r.includes("election date")) {
-        return ["How do I register before the deadline?", "When will counting happen?", "When is the next Lok Sabha?"];
-    }
-    if (r.includes("alternative") || r.includes("aadhaar") || r.includes("pan")) {
-        return ["Can I use Aadhaar to vote?", "What if my name is on the roll but I have no ID?", "How to get Voter ID fast?"];
-    }
-    if (r.includes("lok sabha") || r.includes("parliament")) {
-        return ["What is a Vidhan Sabha election?", "How many seats in Lok Sabha?", "When is next general election?"];
-    }
-    return ["How do I register to vote?", "What is the EPIC Voter ID card?", "How do I find my polling booth?"];
-}
-async function sendMessage(text) {
-    text = text.trim();
-    if (!text || isSending) return;
-
-    appendUser(text);
-    followupsContainer.innerHTML = "";
-    userInput.value = "";
-
-    // 1. Check session cache first (saves API call entirely)
-    const cached = getCache(text);
-    if (cached) {
-        appendBot(cached.reply, "local"); // treat cached as instant
-        setFollowups(cached.suggested_followups || []);
-        return;
-    }
-
-    // 2. Show typing and call API
-    isSending = true;
-    typingIndicator.classList.remove("hidden");
-    scrollBottom();
-
-    try {
-        const res = await fetch("/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: text, context: conversationContext })
-        });
-
-        typingIndicator.classList.add("hidden");
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        appendBot(data.reply, data.source || "ai");
-        setFollowups(data.suggested_followups || []);
-        setCache(text, data); // store in session cache
-
-    } catch (err) {
-        typingIndicator.classList.add("hidden");
-        appendBot("⚠️ Something went wrong. Please try again or visit [eci.gov.in](https://eci.gov.in) or call the National Voter Helpline at **1950** (toll-free).", "local");
-        console.error(err);
-    } finally {
-        isSending = false;
-    }
-}
-
-/* ===== FORM SUBMIT with debounce ===== */
-chatForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    clearTimeout(sendDebounceTimer);
-    sendDebounceTimer = setTimeout(() => sendMessage(userInput.value), DEBOUNCE_MS);
-});
-
-/* ===== ENTER key passthrough ===== */
-userInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        chatForm.dispatchEvent(new Event("submit"));
-    }
-});
-
-/* ===== RESTORE STATE from sessionStorage ===== */
-const savedState = sessionStorage.getItem("vw-india-state");
-if (savedState) {
-    stateSelect.value = savedState;
-    conversationContext.state = savedState;
-    const stateName = STATE_NAMES[savedState] || savedState;
-    stateBadge.textContent = `${stateName} — ECI Data`;
-}
-stateSelect.addEventListener("change", () => {
-    sessionStorage.setItem("vw-india-state", stateSelect.value);
-});
+/* ===== RESTORE LANGUAGE ===== */
+const savedLang=localStorage.getItem("vw-lang")||"en";
+langSelect.value=savedLang;
+applyLang(savedLang);

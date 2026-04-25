@@ -31,4 +31,9 @@ def build_chat_prompt(context_dict: dict) -> str:
     else:
         context_str = "No specific state selected yet. Answer based on general ECI guidelines."
 
-    return SYSTEM_PROMPT.format(context=context_str)
+    lang = context_dict.get("language", "English")
+    lang_instruction = ""
+    if lang and lang != "English":
+        lang_instruction = f"\n\nIMPORTANT: Respond in {lang}. Use {lang} script. Keep ECI terms, URLs, and numbers in English."
+
+    return SYSTEM_PROMPT.format(context=context_str) + lang_instruction
