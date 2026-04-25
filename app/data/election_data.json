@@ -1,85 +1,251 @@
 {
-  "_disclaimer": "This data is illustrative for demo purposes and may not reflect current real-world legal election data. Always verify with official state sources.",
+  "_disclaimer": "Data sourced from Election Commission of India (eci.gov.in). Always verify current dates with official ECI sources before acting.",
+  "_source": "Election Commission of India — https://eci.gov.in",
+  "_helpline": "1950 (National Voter Helpline — toll-free)",
+  "country": "India",
+  "general_info": {
+    "governing_body": "Election Commission of India (ECI)",
+    "official_website": "https://eci.gov.in",
+    "voter_portal": "https://voters.eci.gov.in",
+    "national_helpline": "1950",
+    "minimum_age": 18,
+    "citizenship_required": true,
+    "id_card_name": "EPIC (Electors Photo Identity Card) — Voter ID Card",
+    "evm_info": "India uses Electronic Voting Machines (EVMs) paired with Voter Verified Paper Audit Trail (VVPAT) for transparency.",
+    "lok_sabha_seats": 543,
+    "rajya_sabha_seats": 245,
+    "last_lok_sabha": {
+      "name": "18th Lok Sabha General Election",
+      "phases": 7,
+      "start_date": "2024-04-19",
+      "end_date": "2024-06-01",
+      "result_date": "2024-06-04",
+      "next_due_year": "2029"
+    }
+  },
+  "alternative_id_documents": [
+    "Aadhaar Card",
+    "Passport",
+    "Driving License",
+    "PAN Card",
+    "MNREGA Job Card",
+    "Bank / Post Office Passbook with Photograph",
+    "Smart Card issued by RGI under NPR",
+    "Disability Certificate with Photo",
+    "Service Identity Card (Central/State Govt / PSU / Public Limited Co.)",
+    "Unique Disability ID (UDID) Card",
+    "NPR Smart Card",
+    "Health Insurance Smart Card issued under Ministry of Labour"
+  ],
+  "registration_forms": {
+    "Form 6": "New voter registration / inclusion of name in electoral roll",
+    "Form 6A": "Registration for Overseas (NRI) voters",
+    "Form 7": "Objection to inclusion / deletion of entry",
+    "Form 8": "Correction of entries / address change / replacement of EPIC"
+  },
   "states": {
-    "CA": {
-      "name": "California",
-      "registration_deadline": "2024-10-21",
-      "early_voting_start": "2024-10-07",
-      "early_voting_end": "2024-11-04",
-      "election_day": "2024-11-05",
-      "id_required": {
-        "required": false,
-        "description": "Most voters do not need to show ID. First-time voters who registered by mail without providing ID information may be asked for ID."
-      },
-      "voting_methods": ["in-person", "mail", "early"],
-      "registration_methods": ["online", "mail", "in-person"],
-      "official_url": "https://www.sos.ca.gov/elections"
+    "DL": {
+      "name": "Delhi",
+      "type": "Union Territory with Legislature",
+      "assembly": "Delhi Legislative Assembly",
+      "total_seats": 70,
+      "last_election_date": "2025-02-05",
+      "last_result_date": "2025-02-08",
+      "next_election_due": "2030",
+      "enrollment_open": true,
+      "enrollment_deadline": "Ongoing — quarterly summary revisions",
+      "epic_required": true,
+      "official_url": "https://ceo.delhi.gov.in",
+      "eci_helpline": "1950",
+      "notes": "Delhi Vidhan Sabha election held on 5 Feb 2025. Next assembly election due in 2030."
     },
-    "NY": {
-      "name": "New York",
-      "registration_deadline": "2024-10-26",
-      "early_voting_start": "2024-10-26",
-      "early_voting_end": "2024-11-03",
-      "election_day": "2024-11-05",
-      "id_required": {
-        "required": false,
-        "description": "ID is generally not required unless you did not provide a valid ID number when registering."
-      },
-      "voting_methods": ["in-person", "mail", "early"],
-      "registration_methods": ["online", "mail", "in-person"],
-      "official_url": "https://www.elections.ny.gov/"
+    "BR": {
+      "name": "Bihar",
+      "type": "State",
+      "assembly": "Bihar Legislative Assembly",
+      "total_seats": 243,
+      "last_election_date": "2025-11-11",
+      "last_result_date": "2025-11-14",
+      "next_election_due": "2030",
+      "enrollment_open": true,
+      "enrollment_deadline": "Ongoing — quarterly summary revisions",
+      "epic_required": true,
+      "official_url": "https://ceobihar.nic.in",
+      "eci_helpline": "1950",
+      "notes": "Bihar Vidhan Sabha election held in two phases: Nov 6 & Nov 11, 2025. Results on Nov 14."
     },
-    "TX": {
-      "name": "Texas",
-      "registration_deadline": "2024-10-07",
-      "early_voting_start": "2024-10-21",
-      "early_voting_end": "2024-11-01",
-      "election_day": "2024-11-05",
-      "id_required": {
-        "required": true,
-        "description": "Photo ID is required. Acceptable forms include TX Driver License, TX Personal ID, US Passport, etc."
-      },
-      "voting_methods": ["in-person", "mail (with excuse)", "early"],
-      "registration_methods": ["mail", "in-person"],
-      "official_url": "https://www.votetexas.gov/"
+    "WB": {
+      "name": "West Bengal",
+      "type": "State",
+      "assembly": "West Bengal Legislative Assembly",
+      "total_seats": 294,
+      "last_election_date": "2026-04-29",
+      "last_result_date": "2026-05-04",
+      "next_election_due": "2031",
+      "enrollment_open": true,
+      "enrollment_deadline": "Closed for 2026 election; opens for next cycle",
+      "epic_required": true,
+      "official_url": "https://ceowestbengal.nic.in",
+      "eci_helpline": "1950",
+      "notes": "West Bengal Vidhan Sabha 2026 election conducted in two phases: April 23 & April 29, 2026. Counting: May 4, 2026."
     },
-    "FL": {
-      "name": "Florida",
-      "registration_deadline": "2024-10-07",
-      "early_voting_start": "2024-10-26",
-      "early_voting_end": "2024-11-02",
-      "election_day": "2024-11-05",
-      "id_required": {
-        "required": true,
-        "description": "Current and valid photo ID with signature required."
-      },
-      "voting_methods": ["in-person", "mail", "early"],
-      "registration_methods": ["online", "mail", "in-person"],
-      "official_url": "https://dos.myflorida.com/elections/"
+    "TN": {
+      "name": "Tamil Nadu",
+      "type": "State",
+      "assembly": "Tamil Nadu Legislative Assembly",
+      "total_seats": 234,
+      "last_election_date": "2026-04-23",
+      "last_result_date": "2026-05-04",
+      "next_election_due": "2031",
+      "enrollment_open": true,
+      "enrollment_deadline": "Closed for 2026 election; opens for next cycle",
+      "epic_required": true,
+      "official_url": "https://elections.tn.gov.in",
+      "eci_helpline": "1950",
+      "notes": "Tamil Nadu Vidhan Sabha 2026 election held on April 23, 2026. Counting: May 4, 2026."
     },
-    "IL": {
-      "name": "Illinois",
-      "registration_deadline": "2024-10-08",
-      "early_voting_start": "2024-09-26",
-      "early_voting_end": "2024-11-04",
-      "election_day": "2024-11-05",
-      "id_required": {
-        "required": false,
-        "description": "ID is not required unless registering to vote on Election Day or if you registered by mail without providing ID."
-      },
-      "voting_methods": ["in-person", "mail", "early"],
-      "registration_methods": ["online", "mail", "in-person"],
-      "official_url": "https://www.elections.il.gov/"
+    "KL": {
+      "name": "Kerala",
+      "type": "State",
+      "assembly": "Kerala Legislative Assembly",
+      "total_seats": 140,
+      "last_election_date": "2026-04-09",
+      "last_result_date": "2026-05-04",
+      "next_election_due": "2031",
+      "enrollment_open": true,
+      "enrollment_deadline": "Closed for 2026 election; opens for next cycle",
+      "epic_required": true,
+      "official_url": "https://www.ceo.kerala.gov.in",
+      "eci_helpline": "1950",
+      "notes": "Kerala Vidhan Sabha 2026 election held on April 9, 2026. Counting: May 4, 2026."
+    },
+    "AS": {
+      "name": "Assam",
+      "type": "State",
+      "assembly": "Assam Legislative Assembly",
+      "total_seats": 126,
+      "last_election_date": "2026-04-09",
+      "last_result_date": "2026-05-04",
+      "next_election_due": "2031",
+      "enrollment_open": true,
+      "enrollment_deadline": "Closed for 2026 election; opens for next cycle",
+      "epic_required": true,
+      "official_url": "https://ceoassam.nic.in",
+      "eci_helpline": "1950",
+      "notes": "Assam Vidhan Sabha 2026 election held on April 9, 2026. Counting: May 4, 2026."
+    },
+    "UP": {
+      "name": "Uttar Pradesh",
+      "type": "State",
+      "assembly": "Uttar Pradesh Legislative Assembly",
+      "total_seats": 403,
+      "last_election_date": "2022-03-07",
+      "next_election_due": "2027",
+      "enrollment_open": true,
+      "enrollment_deadline": "Ongoing — quarterly summary revisions",
+      "epic_required": true,
+      "official_url": "https://ceouttarpradesh.nic.in",
+      "eci_helpline": "1950",
+      "notes": "UP Vidhan Sabha election due in 2027. Current government formed after 2022 election."
+    },
+    "MH": {
+      "name": "Maharashtra",
+      "type": "State",
+      "assembly": "Maharashtra Legislative Assembly",
+      "total_seats": 288,
+      "last_election_date": "2024-11-20",
+      "last_result_date": "2024-11-23",
+      "next_election_due": "2029",
+      "enrollment_open": true,
+      "enrollment_deadline": "Ongoing — quarterly summary revisions",
+      "epic_required": true,
+      "official_url": "https://ceo.maharashtra.gov.in",
+      "eci_helpline": "1950",
+      "notes": "Maharashtra Vidhan Sabha election held on November 20, 2024."
+    },
+    "GJ": {
+      "name": "Gujarat",
+      "type": "State",
+      "assembly": "Gujarat Legislative Assembly",
+      "total_seats": 182,
+      "last_election_date": "2022-12-05",
+      "next_election_due": "2027",
+      "enrollment_open": true,
+      "enrollment_deadline": "Ongoing — quarterly summary revisions",
+      "epic_required": true,
+      "official_url": "https://ceo.gujarat.gov.in",
+      "eci_helpline": "1950",
+      "notes": "Gujarat Vidhan Sabha election due in 2027."
+    },
+    "RJ": {
+      "name": "Rajasthan",
+      "type": "State",
+      "assembly": "Rajasthan Legislative Assembly",
+      "total_seats": 200,
+      "last_election_date": "2023-11-25",
+      "next_election_due": "2028",
+      "enrollment_open": true,
+      "enrollment_deadline": "Ongoing — quarterly summary revisions",
+      "epic_required": true,
+      "official_url": "https://ceorajasthan.nic.in",
+      "eci_helpline": "1950",
+      "notes": "Rajasthan Vidhan Sabha election due in 2028."
+    },
+    "KA": {
+      "name": "Karnataka",
+      "type": "State",
+      "assembly": "Karnataka Legislative Assembly",
+      "total_seats": 224,
+      "last_election_date": "2023-05-10",
+      "next_election_due": "2028",
+      "enrollment_open": true,
+      "enrollment_deadline": "Ongoing — quarterly summary revisions",
+      "epic_required": true,
+      "official_url": "https://ceokarnataka.kar.nic.in",
+      "eci_helpline": "1950",
+      "notes": "Karnataka Vidhan Sabha election due in 2028."
+    },
+    "MP": {
+      "name": "Madhya Pradesh",
+      "type": "State",
+      "assembly": "Madhya Pradesh Legislative Assembly",
+      "total_seats": 230,
+      "last_election_date": "2023-11-17",
+      "next_election_due": "2028",
+      "enrollment_open": true,
+      "enrollment_deadline": "Ongoing — quarterly summary revisions",
+      "epic_required": true,
+      "official_url": "https://ceomponline.com",
+      "eci_helpline": "1950",
+      "notes": "MP Vidhan Sabha election due in 2028."
+    },
+    "PB": {
+      "name": "Punjab",
+      "type": "State",
+      "assembly": "Punjab Legislative Assembly",
+      "total_seats": 117,
+      "last_election_date": "2022-02-20",
+      "next_election_due": "2027",
+      "enrollment_open": true,
+      "enrollment_deadline": "Ongoing — quarterly summary revisions",
+      "epic_required": true,
+      "official_url": "https://ceopunjab.nic.in",
+      "eci_helpline": "1950",
+      "notes": "Punjab Vidhan Sabha election due in 2027."
     }
   },
   "general_faqs": [
     {
-      "question": "Do I need to re-register if I moved?",
-      "answer": "Yes, if you moved to a new state or county, you typically need to update your registration."
+      "question": "What is the Voter ID card called in India?",
+      "answer": "The Voter ID card in India is officially called the EPIC — Electors Photo Identity Card. It is issued by the Election Commission of India."
     },
     {
-      "question": "Can I vote if I am a college student?",
-      "answer": "Yes, you can usually choose to register at your home address or your college address, but you cannot vote in both places."
+      "question": "What if I don't have my Voter ID on election day?",
+      "answer": "The ECI allows 12 alternative identity documents at polling booths including Aadhaar, Passport, Driving License, PAN Card, MNREGA Job Card, and Bank Passbook with photo."
+    },
+    {
+      "question": "How do I register as a new voter?",
+      "answer": "Fill Form 6 online at voters.eci.gov.in or visit your nearest BLO (Booth Level Officer). You must be 18+ and an Indian citizen."
     }
   ]
 }

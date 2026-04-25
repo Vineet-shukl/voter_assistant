@@ -45,11 +45,12 @@ stateSelect.addEventListener("change", () => {
     const state = stateSelect.value;
     if (state) {
         conversationContext.state = state;
-        stateBadge.textContent = `${state} — Election Assistant`;
-        appendBot(`📍 Got it! I'll use **${state}** for state-specific deadlines and rules. What would you like to know?`, "local");
+        const stateName = STATE_NAMES[state] || state;
+        stateBadge.textContent = `${stateName} — ECI Data`;
+        appendBot(`📍 Got it! I'll use **${stateName}** for state-specific election schedules. What would you like to know?`, "local");
     } else {
         delete conversationContext.state;
-        stateBadge.textContent = "Election Assistant";
+        stateBadge.textContent = "Powered by ECI Data";
     }
 });
 
@@ -150,7 +151,36 @@ function escapeHtml(str) {
     return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
-/* ===== SEND MESSAGE ===== */
+/* ===== STATE NAMES MAP ===== */
+const STATE_NAMES = {
+    DL: "Delhi", BR: "Bihar", WB: "West Bengal", TN: "Tamil Nadu",
+    KL: "Kerala", AS: "Assam", UP: "Uttar Pradesh", MH: "Maharashtra",
+    GJ: "Gujarat", RJ: "Rajasthan", KA: "Karnataka", MP: "Madhya Pradesh", PB: "Punjab"
+};
+
+/* ===== INDIA FOLLOW-UP CHIPS ===== */
+function pick_followups(reply) {
+    const r = reply.toLowerCase();
+    if (r.includes("form 6") || r.includes("register")) {
+        return ["What documents do I need for Form 6?", "Can I register online?", "Where do I find my BLO?"];
+    }
+    if (r.includes("epic") || r.includes("voter id")) {
+        return ["How do I get a digital e-EPIC?", "How to correct my Voter ID details?", "What if I lost my Voter ID?"];
+    }
+    if (r.includes("evm") || r.includes("vvpat") || r.includes("voting machine")) {
+        return ["Is EVM voting safe?", "What is VVPAT?", "How do I use EVM on election day?"];
+    }
+    if (r.includes("deadline") || r.includes("schedule") || r.includes("election date")) {
+        return ["How do I register before the deadline?", "When will counting happen?", "When is the next Lok Sabha?"];
+    }
+    if (r.includes("alternative") || r.includes("aadhaar") || r.includes("pan")) {
+        return ["Can I use Aadhaar to vote?", "What if my name is on the roll but I have no ID?", "How to get Voter ID fast?"];
+    }
+    if (r.includes("lok sabha") || r.includes("parliament")) {
+        return ["What is a Vidhan Sabha election?", "How many seats in Lok Sabha?", "When is next general election?"];
+    }
+    return ["How do I register to vote?", "What is the EPIC Voter ID card?", "How do I find my polling booth?"];
+}
 async function sendMessage(text) {
     text = text.trim();
     if (!text || isSending) return;
@@ -190,7 +220,7 @@ async function sendMessage(text) {
 
     } catch (err) {
         typingIndicator.classList.add("hidden");
-        appendBot("⚠️ Something went wrong. Please try again or visit your state's official election website.", "local");
+        appendBot("⚠️ Something went wrong. Please try again or visit [eci.gov.in](https://eci.gov.in) or call the National Voter Helpline at **1950** (toll-free).", "local");
         console.error(err);
     } finally {
         isSending = false;
@@ -213,12 +243,13 @@ userInput.addEventListener("keydown", (e) => {
 });
 
 /* ===== RESTORE STATE from sessionStorage ===== */
-const savedState = sessionStorage.getItem("vw-state");
+const savedState = sessionStorage.getItem("vw-india-state");
 if (savedState) {
     stateSelect.value = savedState;
     conversationContext.state = savedState;
-    stateBadge.textContent = `${savedState} — Election Assistant`;
+    const stateName = STATE_NAMES[savedState] || savedState;
+    stateBadge.textContent = `${stateName} — ECI Data`;
 }
 stateSelect.addEventListener("change", () => {
-    sessionStorage.setItem("vw-state", stateSelect.value);
+    sessionStorage.setItem("vw-india-state", stateSelect.value);
 });

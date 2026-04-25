@@ -6,17 +6,18 @@ API_KEY = os.environ.get("GEMINI_API_KEY")
 if API_KEY:
     genai.configure(api_key=API_KEY)
 
-# gemini-2.0-flash-lite: cheapest, fast, great for factual Q&A — saves tokens vs 2.5-flash
 MODEL_NAME = "gemini-2.0-flash-lite"
 
+# Indian political parties/leaders — partisan refusal guard
 PARTISAN_KEYWORDS = [
-    "vote for", "trump", "biden", "harris", "democrat", "republican",
-    "endorse", "opinion on", "which party", "political party", "gop",
-    "liberal", "conservative", "maga"
+    "vote for", "vote bjp", "vote congress", "vote aap", "vote tmc",
+    "modi", "rahul gandhi", "kejriwal", "mamata", "yogi", "nitish",
+    "bjp", "congress", "aam aadmi party", "shiv sena", "ncp", "bsp", "sp",
+    "endorse", "best party", "which party", "support party",
+    "opinion on party", "party better", "who should i vote"
 ]
 
 def check_for_refusal(message: str) -> str | None:
-    """Keyword-based partisan/off-topic guard. Returns refusal string or None."""
     lower = message.lower()
     if any(kw in lower for kw in PARTISAN_KEYWORDS):
         return REFUSAL_TEMPLATES["partisan"]
@@ -24,16 +25,11 @@ def check_for_refusal(message: str) -> str | None:
 
 
 def generate_reply(user_message: str, grounded_context: dict) -> str:
-    """
-    Sends message to Gemini with minimal, grounded context.
-    Pre-checks reduce unnecessary API calls.
-    """
-    # Guard 1: Partisan check (no API call)
+    """Calls Gemini only when local answer layer doesn't cover the question."""
     refusal = check_for_refusal(user_message)
     if refusal:
         return refusal
 
-    # Guard 2: Build a lean system prompt (only relevant context)
     system_instruction = build_chat_prompt(grounded_context)
 
     try:
@@ -44,11 +40,11 @@ def generate_reply(user_message: str, grounded_context: dict) -> str:
         response = model.generate_content(
             user_message,
             generation_config=genai.GenerationConfig(
-                temperature=0.2,      # Low temp = more deterministic, fewer retry tokens
-                max_output_tokens=512 # Cap response length to save tokens
+                temperature=0.2,
+                max_output_tokens=512
             )
         )
         return response.text
     except Exception as e:
         print(f"Gemini API Error: {e}")
-        return "⚠️ I'm having trouble connecting right now. Please try again or visit your state's official election website for the most accurate information."
+        return "⚠️ I'm having trouble connecting right now. Please visit [eci.gov.in](https://eci.gov.in) or call the National Voter Helpline at **1950** (toll-free) for assistance."

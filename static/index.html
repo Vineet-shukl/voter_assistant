@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VoteWise — Election Assistant</title>
-    <meta name="description" content="VoteWise helps you understand the election process, voter registration, eligibility, and deadlines in an easy-to-follow conversational way.">
+    <title>VoteWise India — Election Assistant</title>
+    <meta name="description" content="VoteWise India helps citizens understand Indian elections, voter registration, EPIC card, ECI guidelines, and state election schedules.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,7 +12,6 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-    <!-- Animated background blobs -->
     <div class="bg-blob blob-1"></div>
     <div class="bg-blob blob-2"></div>
     <div class="bg-blob blob-3"></div>
@@ -21,29 +20,43 @@
         <!-- ===== SIDEBAR ===== -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <span class="logo">🗳️ VoteWise</span>
+                <span class="logo">🗳️ VoteWise India</span>
                 <button id="sidebar-close" class="icon-btn" aria-label="Close sidebar">✕</button>
             </div>
 
             <div class="sidebar-section">
-                <p class="sidebar-label">Select your state</p>
+                <p class="sidebar-label">Select your State / UT</p>
                 <select id="state-select" aria-label="Select state">
-                    <option value="">— Choose a state —</option>
-                    <option value="CA">California</option>
-                    <option value="FL">Florida</option>
-                    <option value="IL">Illinois</option>
-                    <option value="NY">New York</option>
-                    <option value="TX">Texas</option>
+                    <option value="">— Choose a State / UT —</option>
+                    <optgroup label="Recent Elections (2026)">
+                        <option value="WB">West Bengal</option>
+                        <option value="TN">Tamil Nadu</option>
+                        <option value="KL">Kerala</option>
+                        <option value="AS">Assam</option>
+                    </optgroup>
+                    <optgroup label="2025 Elections">
+                        <option value="DL">Delhi</option>
+                        <option value="BR">Bihar</option>
+                    </optgroup>
+                    <optgroup label="Upcoming (2027–2029)">
+                        <option value="UP">Uttar Pradesh</option>
+                        <option value="GJ">Gujarat</option>
+                        <option value="PB">Punjab</option>
+                        <option value="MH">Maharashtra</option>
+                        <option value="KA">Karnataka</option>
+                        <option value="RJ">Rajasthan</option>
+                        <option value="MP">Madhya Pradesh</option>
+                    </optgroup>
                 </select>
             </div>
 
             <div class="sidebar-section">
-                <p class="sidebar-label">Quick Check</p>
+                <p class="sidebar-label">Quick Eligibility Check</p>
                 <div id="eligibility-form">
-                    <input type="number" id="age-input" placeholder="Your age" min="0" max="120" aria-label="Enter your age">
+                    <input type="number" id="age-input" placeholder="Your age (18+)" min="0" max="120" aria-label="Enter your age">
                     <label class="checkbox-row">
-                        <input type="checkbox" id="citizen-check" aria-label="I am a US citizen">
-                        <span>I'm a U.S. citizen</span>
+                        <input type="checkbox" id="citizen-check" aria-label="I am an Indian citizen">
+                        <span>I'm an Indian citizen</span>
                     </label>
                     <button id="check-eligibility-btn" class="pill-btn">Check Eligibility</button>
                 </div>
@@ -53,17 +66,27 @@
             <div class="sidebar-section">
                 <p class="sidebar-label">Quick Topics</p>
                 <div class="quick-topics">
-                    <button class="topic-chip" data-msg="How do I register to vote?">📋 Register</button>
-                    <button class="topic-chip" data-msg="What ID do I need at the polls?">🪪 Photo ID</button>
-                    <button class="topic-chip" data-msg="When is election day?">📅 Election Day</button>
-                    <button class="topic-chip" data-msg="Can I vote by mail?">✉️ Mail Ballot</button>
-                    <button class="topic-chip" data-msg="What is early voting?">⏰ Early Vote</button>
-                    <button class="topic-chip" data-msg="Where is my polling place?">📍 Polling Place</button>
+                    <button class="topic-chip" data-msg="How do I register as a voter in India?">📋 Register (Form 6)</button>
+                    <button class="topic-chip" data-msg="What is the EPIC Voter ID card?">🪪 EPIC / Voter ID</button>
+                    <button class="topic-chip" data-msg="What alternative IDs are accepted at polling booth?">📄 Alt. ID Docs</button>
+                    <button class="topic-chip" data-msg="How do EVMs and VVPAT work?">🖥️ EVM / VVPAT</button>
+                    <button class="topic-chip" data-msg="How do I check if my name is on the electoral roll?">🔍 Check Name</button>
+                    <button class="topic-chip" data-msg="When is the next Lok Sabha election?">🏛️ Lok Sabha</button>
+                    <button class="topic-chip" data-msg="What is the cVIGIL app for?">📱 cVIGIL App</button>
+                    <button class="topic-chip" data-msg="What is the Model Code of Conduct?">📜 Model Code</button>
                 </div>
             </div>
 
+            <div class="sidebar-section eci-links">
+                <p class="sidebar-label">Official ECI Resources</p>
+                <a href="https://voters.eci.gov.in" target="_blank" rel="noopener" class="eci-link">🌐 voters.eci.gov.in</a>
+                <a href="https://electoralsearch.eci.gov.in" target="_blank" rel="noopener" class="eci-link">🔍 Search Electoral Roll</a>
+                <a href="https://eci.gov.in" target="_blank" rel="noopener" class="eci-link">🏛️ eci.gov.in (Official ECI)</a>
+                <div class="helpline-badge">📞 Helpline: <strong>1950</strong> (Toll-free)</div>
+            </div>
+
             <div class="sidebar-footer">
-                <p>⚠️ Data is illustrative. Always verify with your state's official election website.</p>
+                ⚠️ Data sourced from ECI. Always verify at eci.gov.in or call 1950 before acting.
             </div>
         </aside>
 
@@ -72,26 +95,31 @@
             <header class="app-header">
                 <button id="sidebar-open" class="icon-btn" aria-label="Open menu">☰</button>
                 <div class="header-title">
-                    <h1>🗳️ VoteWise</h1>
-                    <span class="subtitle" id="state-badge">Election Assistant</span>
+                    <h1>🗳️ VoteWise India</h1>
+                    <span class="subtitle" id="state-badge">Powered by ECI Data</span>
                 </div>
-                <button id="theme-toggle" class="icon-btn" aria-label="Toggle theme">☀️</button>
+                <div class="header-actions">
+                    <span class="helpline-pill">📞 1950</span>
+                    <button id="theme-toggle" class="icon-btn" aria-label="Toggle theme">☀️</button>
+                </div>
             </header>
 
             <div class="chat-wrapper">
                 <div id="chat-log" role="log" aria-live="polite" aria-label="Conversation">
-                    <!-- Welcome message -->
                     <div class="msg-row bot">
                         <div class="avatar">🗳️</div>
                         <div class="bubble bot-bubble">
-                            <p>Hi! I'm <strong>VoteWise</strong>, your non-partisan election guide. I can help you with:</p>
+                            <p>नमस्ते! I'm <strong>VoteWise India</strong> — your non-partisan guide to Indian elections, powered by <strong>Election Commission of India (ECI)</strong> data.</p>
+                            <p>I can help you with:</p>
                             <ul>
-                                <li>✅ Voter registration steps</li>
-                                <li>✅ Eligibility requirements</li>
-                                <li>✅ Election deadlines & dates</li>
-                                <li>✅ ID requirements by state</li>
+                                <li>✅ Voter registration (Form 6) &amp; EPIC / Voter ID</li>
+                                <li>✅ State-wise election schedules (Vidhan Sabha / Lok Sabha)</li>
+                                <li>✅ Electoral roll search &amp; polling booth finder</li>
+                                <li>✅ EVM/VVPAT, Model Code of Conduct, cVIGIL</li>
+                                <li>✅ Alternative ID documents accepted at polls</li>
                             </ul>
-                            <p>Select your state in the sidebar for personalized info, or just ask me anything!</p>
+                            <p>Select your <strong>state</strong> from the sidebar for personalised info, or just ask me anything!</p>
+                            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:0.5rem;">📞 National Voter Helpline: <strong>1950</strong> (Toll-free) | 🌐 <a href="https://eci.gov.in" target="_blank">eci.gov.in</a></p>
                             <div class="msg-meta"><span class="source-badge local">⚡ instant</span></div>
                         </div>
                     </div>
@@ -109,7 +137,7 @@
 
             <form id="chat-form" class="input-bar">
                 <input type="text" id="user-input"
-                    placeholder="Ask about voter registration, deadlines, ID requirements…"
+                    placeholder="Ask about voter registration, EPIC card, election dates, EVM…"
                     autocomplete="off"
                     aria-label="Type your question"
                     maxlength="500">
