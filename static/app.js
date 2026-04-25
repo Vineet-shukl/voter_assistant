@@ -1,116 +1,224 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const chatLog = document.getElementById("chat-log");
-    const chatForm = document.getElementById("chat-form");
-    const userInput = document.getElementById("user-input");
-    const typingIndicator = document.getElementById("typing-indicator");
-    const followupsContainer = document.getElementById("followups-container");
-    const themeToggle = document.getElementById("theme-toggle");
+/* ===== CONFIG ===== */
+const CACHE_VERSION = "v2";
+const CACHE_TTL_MS  = 10 * 60 * 1000; // 10 min client-side cache per question
+const DEBOUNCE_MS   = 300;
 
-    // Context object to store user state across messages
-    let conversationContext = {
-        state: null, // e.g., 'CA'
-    };
+/* ===== ELEMENTS ===== */
+const chatLog          = document.getElementById("chat-log");
+const chatForm         = document.getElementById("chat-form");
+const userInput        = document.getElementById("user-input");
+const typingIndicator  = document.getElementById("typing-indicator");
+const followupsContainer = document.getElementById("followups-container");
+const themeToggle      = document.getElementById("theme-toggle");
+const sidebarOpen      = document.getElementById("sidebar-open");
+const sidebarClose     = document.getElementById("sidebar-close");
+const sidebar          = document.getElementById("sidebar");
+const stateSelect      = document.getElementById("state-select");
+const ageinput         = document.getElementById("age-input");
+const citizenCheck     = document.getElementById("citizen-check");
+const checkBtn         = document.getElementById("check-eligibility-btn");
+const eligibilityResult = document.getElementById("eligibility-result");
+const stateBadge       = document.getElementById("state-badge");
 
-    // Attempt to extract state code from user input simply
-    function extractState(msg) {
-        const stateMatch = msg.match(/\b(CA|NY|TX|FL|IL)\b/i);
-        if (stateMatch) {
-            conversationContext.state = stateMatch[1].toUpperCase();
-        }
+/* ===== STATE ===== */
+let conversationContext = {};
+let sendDebounceTimer   = null;
+let isSending           = false;
+
+/* ===== THEME ===== */
+const setTheme = (theme) => {
+    document.documentElement.setAttribute("data-theme", theme);
+    themeToggle.textContent = theme === "dark" ? "☀️" : "🌙";
+    localStorage.setItem("vw-theme", theme);
+};
+themeToggle.addEventListener("click", () => {
+    setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
+});
+setTheme(localStorage.getItem("vw-theme") || "dark");
+
+/* ===== SIDEBAR ===== */
+sidebarOpen?.addEventListener("click", () => sidebar.classList.add("open"));
+sidebarClose?.addEventListener("click", () => sidebar.classList.remove("open"));
+
+/* ===== STATE SELECTOR ===== */
+stateSelect.addEventListener("change", () => {
+    const state = stateSelect.value;
+    if (state) {
+        conversationContext.state = state;
+        stateBadge.textContent = `${state} — Election Assistant`;
+        appendBot(`📍 Got it! I'll use **${state}** for state-specific deadlines and rules. What would you like to know?`, "local");
+    } else {
+        delete conversationContext.state;
+        stateBadge.textContent = "Election Assistant";
+    }
+});
+
+/* ===== QUICK TOPIC CHIPS ===== */
+document.querySelectorAll(".topic-chip").forEach(chip => {
+    chip.addEventListener("click", () => sendMessage(chip.dataset.msg));
+});
+
+/* ===== ELIGIBILITY CHECKER ===== */
+checkBtn.addEventListener("click", async () => {
+    const age     = parseInt(ageinput.value, 10);
+    const citizen = citizenCheck.checked;
+    const state   = stateSelect.value || "CA";
+
+    if (isNaN(age) || age < 0 || age > 120) {
+        eligibilityResult.textContent = "⚠️ Enter a valid age (0–120).";
+        eligibilityResult.className = "ineligible";
+        eligibilityResult.classList.remove("hidden");
+        return;
     }
 
-    // Theme logic
-    const toggleTheme = () => {
-        const currentTheme = document.documentElement.getAttribute("data-theme");
-        const newTheme = currentTheme === "dark" ? "light" : "dark";
-        document.documentElement.setAttribute("data-theme", newTheme);
-        themeToggle.textContent = newTheme === "dark" ? "☀️" : "🌙";
-        localStorage.setItem("theme", newTheme);
-    };
-
-    themeToggle.addEventListener("click", toggleTheme);
-    if (localStorage.getItem("theme") === "dark") {
-        toggleTheme(); // It defaults to light in HTML, so toggle if dark is saved
-    }
-
-    // Scroll to bottom
-    const scrollToBottom = () => {
-        chatLog.scrollTop = chatLog.scrollHeight;
-    };
-
-    // Add message to UI
-    const appendMessage = (text, sender, isMarkdown = false) => {
-        const msgDiv = document.createElement("div");
-        msgDiv.classList.add("message", `${sender}-message`);
-        
-        const bubble = document.createElement("div");
-        bubble.classList.add("message-bubble");
-        
-        if (isMarkdown && sender === 'bot') {
-            bubble.innerHTML = marked.parse(text);
+    try {
+        const res = await fetch(`/eligibility?age=${age}&citizen=${citizen}&state=${state}`);
+        const data = await res.json();
+        eligibilityResult.classList.remove("hidden");
+        if (data.eligible) {
+            eligibilityResult.textContent = "✅ You appear eligible to vote!";
+            eligibilityResult.className = "eligible";
         } else {
-            const p = document.createElement("p");
-            p.textContent = text;
-            bubble.appendChild(p);
+            eligibilityResult.textContent = `❌ ${data.reasons[0]}`;
+            eligibilityResult.className = "ineligible";
         }
-        
-        msgDiv.appendChild(bubble);
-        chatLog.appendChild(msgDiv);
-        scrollToBottom();
-    };
+    } catch {
+        eligibilityResult.textContent = "⚠️ Could not check eligibility.";
+        eligibilityResult.className = "ineligible";
+        eligibilityResult.classList.remove("hidden");
+    }
+});
 
-    // Add followup chips
-    const renderFollowups = (chips) => {
-        followupsContainer.innerHTML = "";
-        chips.forEach(chipText => {
-            const btn = document.createElement("button");
-            btn.classList.add("chip");
-            btn.textContent = chipText;
-            btn.addEventListener("click", () => {
-                userInput.value = chipText;
-                chatForm.dispatchEvent(new Event("submit"));
-            });
-            followupsContainer.appendChild(btn);
-        });
-        scrollToBottom();
-    };
+/* ===== RESPONSE CACHE ===== */
+const cacheKey = (msg) => `${CACHE_VERSION}:${msg.trim().toLowerCase()}`;
 
-    // Handle form submit
-    chatForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const text = userInput.value.trim();
-        if (!text) return;
+const getCache = (msg) => {
+    try {
+        const raw = sessionStorage.getItem(cacheKey(msg));
+        if (!raw) return null;
+        const { data, ts } = JSON.parse(raw);
+        if (Date.now() - ts > CACHE_TTL_MS) { sessionStorage.removeItem(cacheKey(msg)); return null; }
+        return data;
+    } catch { return null; }
+};
 
-        // UI Updates for user message
-        appendMessage(text, "user");
-        userInput.value = "";
-        followupsContainer.innerHTML = "";
-        typingIndicator.classList.remove("hidden");
-        scrollToBottom();
+const setCache = (msg, data) => {
+    try {
+        sessionStorage.setItem(cacheKey(msg), JSON.stringify({ data, ts: Date.now() }));
+    } catch { /* quota exceeded, ignore */ }
+};
 
-        extractState(text);
+/* ===== UI HELPERS ===== */
+const scrollBottom = () => chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: "smooth" });
 
-        try {
-            const response = await fetch("/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: text, context: conversationContext })
-            });
+function appendUser(text) {
+    const row = document.createElement("div");
+    row.className = "msg-row user";
+    row.innerHTML = `<div class="bubble user-bubble">${escapeHtml(text)}</div>`;
+    chatLog.appendChild(row);
+    scrollBottom();
+}
 
-            if (!response.ok) {
-                throw new Error("API responded with error");
-            }
+function appendBot(text, source = "ai") {
+    const row = document.createElement("div");
+    row.className = "msg-row bot";
+    const badge = source === "local"
+        ? `<span class="source-badge local">⚡ instant</span>`
+        : `<span class="source-badge ai">🤖 AI</span>`;
+    row.innerHTML = `
+        <div class="avatar">🗳️</div>
+        <div class="bubble bot-bubble">
+            ${marked.parse(text)}
+            <div class="msg-meta">${badge}</div>
+        </div>`;
+    chatLog.appendChild(row);
+    scrollBottom();
+}
 
-            const data = await response.json();
-            typingIndicator.classList.add("hidden");
-            appendMessage(data.reply, "bot", true);
-            if (data.suggested_followups) {
-                renderFollowups(data.suggested_followups);
-            }
-        } catch (error) {
-            typingIndicator.classList.add("hidden");
-            appendMessage("Sorry, I encountered an error connecting to the server.", "bot");
-            console.error(error);
-        }
+function setFollowups(chips) {
+    followupsContainer.innerHTML = "";
+    chips.slice(0, 3).forEach(text => {
+        const btn = document.createElement("button");
+        btn.className = "followup-chip";
+        btn.textContent = text;
+        btn.addEventListener("click", () => sendMessage(text));
+        followupsContainer.appendChild(btn);
     });
+}
+
+function escapeHtml(str) {
+    return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+/* ===== SEND MESSAGE ===== */
+async function sendMessage(text) {
+    text = text.trim();
+    if (!text || isSending) return;
+
+    appendUser(text);
+    followupsContainer.innerHTML = "";
+    userInput.value = "";
+
+    // 1. Check session cache first (saves API call entirely)
+    const cached = getCache(text);
+    if (cached) {
+        appendBot(cached.reply, "local"); // treat cached as instant
+        setFollowups(cached.suggested_followups || []);
+        return;
+    }
+
+    // 2. Show typing and call API
+    isSending = true;
+    typingIndicator.classList.remove("hidden");
+    scrollBottom();
+
+    try {
+        const res = await fetch("/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: text, context: conversationContext })
+        });
+
+        typingIndicator.classList.add("hidden");
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        appendBot(data.reply, data.source || "ai");
+        setFollowups(data.suggested_followups || []);
+        setCache(text, data); // store in session cache
+
+    } catch (err) {
+        typingIndicator.classList.add("hidden");
+        appendBot("⚠️ Something went wrong. Please try again or visit your state's official election website.", "local");
+        console.error(err);
+    } finally {
+        isSending = false;
+    }
+}
+
+/* ===== FORM SUBMIT with debounce ===== */
+chatForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    clearTimeout(sendDebounceTimer);
+    sendDebounceTimer = setTimeout(() => sendMessage(userInput.value), DEBOUNCE_MS);
+});
+
+/* ===== ENTER key passthrough ===== */
+userInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        chatForm.dispatchEvent(new Event("submit"));
+    }
+});
+
+/* ===== RESTORE STATE from sessionStorage ===== */
+const savedState = sessionStorage.getItem("vw-state");
+if (savedState) {
+    stateSelect.value = savedState;
+    conversationContext.state = savedState;
+    stateBadge.textContent = `${savedState} — Election Assistant`;
+}
+stateSelect.addEventListener("change", () => {
+    sessionStorage.setItem("vw-state", stateSelect.value);
 });

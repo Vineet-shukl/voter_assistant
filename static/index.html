@@ -1,51 +1,124 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VoteWise | Election Assistant</title>
-    <link rel="stylesheet" href="/assets/style.css">
-    <!-- Use Google Fonts -->
+    <title>VoteWise — Election Assistant</title>
+    <meta name="description" content="VoteWise helps you understand the election process, voter registration, eligibility, and deadlines in an easy-to-follow conversational way.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Marked.js for parsing markdown in chat -->
+    <link rel="stylesheet" href="/assets/style.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-    <header class="app-header">
-        <div class="header-content">
-            <h1>🗳️ VoteWise</h1>
-            <p>Your guide to the election process</p>
-        </div>
-        <button id="theme-toggle" aria-label="Toggle Dark Mode">🌙</button>
-    </header>
+    <!-- Animated background blobs -->
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+    <div class="bg-blob blob-3"></div>
 
-    <main class="chat-container">
-        <div id="chat-log" role="log" aria-live="polite">
-            <div class="message bot-message">
-                <div class="message-bubble">
-                    <p>Hi! I'm VoteWise. I can help you figure out if you're eligible to vote, how to register, and what deadlines you need to know. What can I help you with today?</p>
-                    <p><em>Note: My answers are illustrative and you should always check your state's official website.</em></p>
+    <div class="app-shell">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <span class="logo">🗳️ VoteWise</span>
+                <button id="sidebar-close" class="icon-btn" aria-label="Close sidebar">✕</button>
+            </div>
+
+            <div class="sidebar-section">
+                <p class="sidebar-label">Select your state</p>
+                <select id="state-select" aria-label="Select state">
+                    <option value="">— Choose a state —</option>
+                    <option value="CA">California</option>
+                    <option value="FL">Florida</option>
+                    <option value="IL">Illinois</option>
+                    <option value="NY">New York</option>
+                    <option value="TX">Texas</option>
+                </select>
+            </div>
+
+            <div class="sidebar-section">
+                <p class="sidebar-label">Quick Check</p>
+                <div id="eligibility-form">
+                    <input type="number" id="age-input" placeholder="Your age" min="0" max="120" aria-label="Enter your age">
+                    <label class="checkbox-row">
+                        <input type="checkbox" id="citizen-check" aria-label="I am a US citizen">
+                        <span>I'm a U.S. citizen</span>
+                    </label>
+                    <button id="check-eligibility-btn" class="pill-btn">Check Eligibility</button>
+                </div>
+                <div id="eligibility-result" class="hidden"></div>
+            </div>
+
+            <div class="sidebar-section">
+                <p class="sidebar-label">Quick Topics</p>
+                <div class="quick-topics">
+                    <button class="topic-chip" data-msg="How do I register to vote?">📋 Register</button>
+                    <button class="topic-chip" data-msg="What ID do I need at the polls?">🪪 Photo ID</button>
+                    <button class="topic-chip" data-msg="When is election day?">📅 Election Day</button>
+                    <button class="topic-chip" data-msg="Can I vote by mail?">✉️ Mail Ballot</button>
+                    <button class="topic-chip" data-msg="What is early voting?">⏰ Early Vote</button>
+                    <button class="topic-chip" data-msg="Where is my polling place?">📍 Polling Place</button>
                 </div>
             </div>
-        </div>
-        
-        <div id="typing-indicator" class="hidden">
-            <div class="dot"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
-        </div>
 
-        <div id="followups-container">
-            <!-- Chips will be inserted here -->
-        </div>
+            <div class="sidebar-footer">
+                <p>⚠️ Data is illustrative. Always verify with your state's official election website.</p>
+            </div>
+        </aside>
 
-        <form id="chat-form">
-            <input type="text" id="user-input" placeholder="Type your question here..." required autocomplete="off" aria-label="Type your message">
-            <button type="submit" id="send-btn" aria-label="Send message">Send</button>
-        </form>
-    </main>
+        <!-- ===== MAIN CHAT ===== -->
+        <div class="main-panel">
+            <header class="app-header">
+                <button id="sidebar-open" class="icon-btn" aria-label="Open menu">☰</button>
+                <div class="header-title">
+                    <h1>🗳️ VoteWise</h1>
+                    <span class="subtitle" id="state-badge">Election Assistant</span>
+                </div>
+                <button id="theme-toggle" class="icon-btn" aria-label="Toggle theme">☀️</button>
+            </header>
+
+            <div class="chat-wrapper">
+                <div id="chat-log" role="log" aria-live="polite" aria-label="Conversation">
+                    <!-- Welcome message -->
+                    <div class="msg-row bot">
+                        <div class="avatar">🗳️</div>
+                        <div class="bubble bot-bubble">
+                            <p>Hi! I'm <strong>VoteWise</strong>, your non-partisan election guide. I can help you with:</p>
+                            <ul>
+                                <li>✅ Voter registration steps</li>
+                                <li>✅ Eligibility requirements</li>
+                                <li>✅ Election deadlines & dates</li>
+                                <li>✅ ID requirements by state</li>
+                            </ul>
+                            <p>Select your state in the sidebar for personalized info, or just ask me anything!</p>
+                            <div class="msg-meta"><span class="source-badge local">⚡ instant</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="typing-indicator" class="msg-row bot hidden">
+                    <div class="avatar">🗳️</div>
+                    <div class="bubble bot-bubble typing">
+                        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                    </div>
+                </div>
+
+                <div id="followups-container" role="group" aria-label="Suggested questions"></div>
+            </div>
+
+            <form id="chat-form" class="input-bar">
+                <input type="text" id="user-input"
+                    placeholder="Ask about voter registration, deadlines, ID requirements…"
+                    autocomplete="off"
+                    aria-label="Type your question"
+                    maxlength="500">
+                <button type="submit" id="send-btn" aria-label="Send">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+            </form>
+        </div>
+    </div>
 
     <script src="/assets/app.js"></script>
 </body>

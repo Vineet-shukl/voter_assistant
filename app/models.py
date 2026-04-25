@@ -8,6 +8,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     suggested_followups: List[str] = Field(default_factory=list)
+    source: Optional[str] = "ai"  # 'local' or 'ai'
 
 class EligibilityRequest(BaseModel):
     age: int = Field(..., ge=0, le=150)

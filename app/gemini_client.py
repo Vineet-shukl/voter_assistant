@@ -2,49 +2,53 @@ import os
 import google.generativeai as genai
 from app.prompts import build_chat_prompt, REFUSAL_TEMPLATES
 
-# Initialize Gemini SDK
 API_KEY = os.environ.get("GEMINI_API_KEY")
 if API_KEY:
     genai.configure(api_key=API_KEY)
 
-MODEL_NAME = "gemini-2.5-flash"
+# gemini-2.0-flash-lite: cheapest, fast, great for factual Q&A — saves tokens vs 2.5-flash
+MODEL_NAME = "gemini-2.0-flash-lite"
+
+PARTISAN_KEYWORDS = [
+    "vote for", "trump", "biden", "harris", "democrat", "republican",
+    "endorse", "opinion on", "which party", "political party", "gop",
+    "liberal", "conservative", "maga"
+]
 
 def check_for_refusal(message: str) -> str | None:
-    """Basic keyword check to trigger early refusal for partisan/off-topic content."""
-    lower_msg = message.lower()
-    partisan_keywords = ["vote for", "trump", "biden", "democrat", "republican", "endorse", "opinion on"]
-    if any(word in lower_msg for word in partisan_keywords):
+    """Keyword-based partisan/off-topic guard. Returns refusal string or None."""
+    lower = message.lower()
+    if any(kw in lower for kw in PARTISAN_KEYWORDS):
         return REFUSAL_TEMPLATES["partisan"]
-    
-    # We let Gemini handle more nuanced off-topic refusals via the system prompt
     return None
 
+
 def generate_reply(user_message: str, grounded_context: dict) -> str:
-    """Sends the grounded prompt and user message to Gemini and returns the reply."""
-    
-    # 1. Quick safety check
+    """
+    Sends message to Gemini with minimal, grounded context.
+    Pre-checks reduce unnecessary API calls.
+    """
+    # Guard 1: Partisan check (no API call)
     refusal = check_for_refusal(user_message)
     if refusal:
         return refusal
-        
-    # 2. Build system instruction
-    system_instruction = build_chat_prompt(user_message, grounded_context)
-    
+
+    # Guard 2: Build a lean system prompt (only relevant context)
+    system_instruction = build_chat_prompt(grounded_context)
+
     try:
-        # 3. Call Gemini
-        # Using the system_instruction feature available in recent gemini models
         model = genai.GenerativeModel(
             model_name=MODEL_NAME,
             system_instruction=system_instruction
         )
-        
         response = model.generate_content(
             user_message,
             generation_config=genai.GenerationConfig(
-                temperature=0.3, # Keep it deterministic and factual
+                temperature=0.2,      # Low temp = more deterministic, fewer retry tokens
+                max_output_tokens=512 # Cap response length to save tokens
             )
         )
         return response.text
     except Exception as e:
         print(f"Gemini API Error: {e}")
-        return "I'm currently experiencing technical difficulties connecting to my AI brain. Please try again later or check your state's official election website."
+        return "⚠️ I'm having trouble connecting right now. Please try again or visit your state's official election website for the most accurate information."
