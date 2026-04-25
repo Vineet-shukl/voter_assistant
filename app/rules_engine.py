@@ -79,6 +79,72 @@ LOCAL_ANSWERS: Dict[str, tuple[list[str], str]] = {
         ["data source", "is this accurate", "official source", "eci website"],
         "**Data Source:**\nAll election data provided by VoteWise India is sourced from the **Election Commission of India (ECI)** at [eci.gov.in](https://eci.gov.in).\n\n⚠️ Always verify important dates and rules with the official ECI website or call the National Voter Helpline at **1950** before taking action."
     ),
+    "unable_to_vote": (
+        [
+            "unable to vote", "cannot vote", "can't vote", "not able to vote",
+            "reasons i cannot vote", "why can't i vote", "why i can't vote",
+            "classify reason", "reasons for not voting", "disqualified",
+            "ineligible to vote", "who cannot vote", "who can't vote",
+            "barred from voting", "not allowed to vote", "matadhaan nahi kar sakta",
+        ],
+        "**Reasons You May Be Unable to Vote in India:**\n\n"
+        "**1. 🔞 Age — Under 18**\nYou must be at least **18 years old** on January 1 of the qualifying year.\n\n"
+        "**2. 🌍 Not an Indian Citizen**\nOnly Indian citizens can vote. OCI/PIO card holders are NOT eligible.\n\n"
+        "**3. 📋 Name Not on Electoral Roll**\nEven if eligible, your name must be on the **electoral roll** of your constituency. Check at [electoralsearch.eci.gov.in](https://electoralsearch.eci.gov.in).\n\n"
+        "**4. 🧠 Unsound Mind (Court declared)**\nPersons declared of unsound mind by a competent court are disqualified.\n\n"
+        "**5. ⚖️ Corrupt Practices / Election Offence**\nPersons convicted of corrupt practices under election law and disqualified by court order.\n\n"
+        "**6. 🏛️ Disqualified under RPA 1951**\nPersons disqualified under the Representation of the People Act, 1951 (e.g., convicted of certain criminal offences).\n\n"
+        "**7. 📍 Wrong Constituency**\nYou can only vote in the constituency where you are **registered**. Moving without updating Form 8 means you must travel back to your registered booth.\n\n"
+        "**8. 🚫 Election Day Restrictions**\n- Polling booth is closed\n- You missed the polling hours (usually 7 AM – 6 PM)\n- You didn't carry valid ID (EPIC or one of the 12 alternative documents)\n\n"
+        "📞 **For help:** Call **1950** (National Voter Helpline — toll-free)\n"
+        "🌐 **Register/correct:** [voters.eci.gov.in](https://voters.eci.gov.in)"
+    ),
+    "name_not_on_roll": (
+        [
+            "name not on list", "name not found", "name not in voter list",
+            "name missing from roll", "not in electoral roll", "naam nahi hai",
+            "name deleted", "name removed", "my name is not", "name is missing",
+        ],
+        "**Your Name is Missing from the Electoral Roll — What to Do:**\n\n"
+        "**Step 1 — Verify first:**\nSearch at [electoralsearch.eci.gov.in](https://electoralsearch.eci.gov.in) or call **1950**.\n\n"
+        "**Step 2 — If genuinely missing:**\n"
+        "- **New registration:** Fill **Form 6** at [voters.eci.gov.in](https://voters.eci.gov.in)\n"
+        "- **Name was deleted:** File **Form 7** objection with your ERO (Electoral Registration Officer)\n"
+        "- **Wrong details:** File **Form 8** to correct entries\n\n"
+        "**Step 3 — On Election Day (if name still missing):**\nYou can approach the **Presiding Officer** at the booth and also file a complaint at the ECI.\n\n"
+        "⏰ Registration is a continuous process — ECI conducts quarterly revisions (Jan, Apr, Jul, Oct).\n"
+        "📞 **Helpline: 1950** (toll-free)"
+    ),
+    "address_change": (
+        [
+            "changed address", "moved house", "new address", "shifted", "relocated",
+            "address change", "update address", "new city", "new state", "transferred",
+            "change of residence", "pata badal gaya",
+        ],
+        "**Moved to a New Address? Update Your Voter Registration:**\n\n"
+        "**Same constituency (same area):**\nFill **Form 8** at [voters.eci.gov.in](https://voters.eci.gov.in) to update your address. Your EPIC number stays the same.\n\n"
+        "**Moved to a new constituency (different area/city/state):**\n"
+        "1. File **Form 7** to delete your name from the old roll\n"
+        "2. File **Form 6** to register in the new constituency\n"
+        "*(You can do both online at [voters.eci.gov.in](https://voters.eci.gov.in))*\n\n"
+        "⚠️ Until your name is updated, you must vote at your **old registered booth**.\n"
+        "📞 Helpline: **1950** (toll-free)"
+    ),
+    "eci_contact": (
+        [
+            "contact eci", "helpline", "1950", "voter helpline", "eci phone",
+            "eci number", "contact election commission", "eci email", "eci address",
+            "toll free", "customer care voting",
+        ],
+        "**Election Commission of India — Contact & Resources:**\n\n"
+        "📞 **National Voter Helpline:** 1950 (toll-free, available in multiple languages)\n"
+        "🌐 **Official Website:** [eci.gov.in](https://eci.gov.in)\n"
+        "🗳️ **Voter Services Portal:** [voters.eci.gov.in](https://voters.eci.gov.in)\n"
+        "🔍 **Electoral Roll Search:** [electoralsearch.eci.gov.in](https://electoralsearch.eci.gov.in)\n"
+        "📱 **Voter Helpline App:** Available on Google Play & App Store\n"
+        "📱 **cVIGIL App:** Report MCC violations (results in 100 min action)\n\n"
+        "**ECI Headquarters:**\nNirvachan Sadan, Ashoka Road, New Delhi – 110001"
+    ),
 }
 
 def find_local_answer(message: str) -> Optional[str]:
