@@ -31,7 +31,7 @@ VoteWise uses a **Hybrid Rules + LLM architecture**:
 - **Google Gemini API:** Conversational AI (gemini-2.5-flash)
 
 ## 🚀 Live Demo URL
-[To be added after deployment]
+**[https://votewise-48563985294.us-central1.run.app](https://votewise-48563985294.us-central1.run.app)**
 
 ## 🧪 Testing
 The project includes a robust suite of unit and integration tests (built with `pytest`).
