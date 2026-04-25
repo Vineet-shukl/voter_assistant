@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoteWise | Election Assistant</title>
+    <link rel="stylesheet" href="/assets/style.css">
+    <!-- Use Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Marked.js for parsing markdown in chat -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <h1>🗳️ VoteWise</h1>
+            <p>Your guide to the election process</p>
+        </div>
+        <button id="theme-toggle" aria-label="Toggle Dark Mode">🌙</button>
+    </header>
+
+    <main class="chat-container">
+        <div id="chat-log" role="log" aria-live="polite">
+            <div class="message bot-message">
+                <div class="message-bubble">
+                    <p>Hi! I'm VoteWise. I can help you figure out if you're eligible to vote, how to register, and what deadlines you need to know. What can I help you with today?</p>
+                    <p><em>Note: My answers are illustrative and you should always check your state's official website.</em></p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="typing-indicator" class="hidden">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+
+        <div id="followups-container">
+            <!-- Chips will be inserted here -->
+        </div>
+
+        <form id="chat-form">
+            <input type="text" id="user-input" placeholder="Type your question here..." required autocomplete="off" aria-label="Type your message">
+            <button type="submit" id="send-btn" aria-label="Send message">Send</button>
+        </form>
+    </main>
+
+    <script src="/assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+{
+  "_disclaimer": "This data is illustrative for demo purposes and may not reflect current real-world legal election data. Always verify with official state sources.",
+  "states": {
+    "CA": {
+      "name": "California",
+      "registration_deadline": "2024-10-21",
+      "early_voting_start": "2024-10-07",
+      "early_voting_end": "2024-11-04",
+      "election_day": "2024-11-05",
+      "id_required": {
+        "required": false,
+        "description": "Most voters do not need to show ID. First-time voters who registered by mail without providing ID information may be asked for ID."
+      },
+      "voting_methods": ["in-person", "mail", "early"],
+      "registration_methods": ["online", "mail", "in-person"],
+      "official_url": "https://www.sos.ca.gov/elections"
+    },
+    "NY": {
+      "name": "New York",
+      "registration_deadline": "2024-10-26",
+      "early_voting_start": "2024-10-26",
+      "early_voting_end": "2024-11-03",
+      "election_day": "2024-11-05",
+      "id_required": {
+        "required": false,
+        "description": "ID is generally not required unless you did not provide a valid ID number when registering."
+      },
+      "voting_methods": ["in-person", "mail", "early"],
+      "registration_methods": ["online", "mail", "in-person"],
+      "official_url": "https://www.elections.ny.gov/"
+    },
+    "TX": {
+      "name": "Texas",
+      "registration_deadline": "2024-10-07",
+      "early_voting_start": "2024-10-21",
+      "early_voting_end": "2024-11-01",
+      "election_day": "2024-11-05",
+      "id_required": {
+        "required": true,
+        "description": "Photo ID is required. Acceptable forms include TX Driver License, TX Personal ID, US Passport, etc."
+      },
+      "voting_methods": ["in-person", "mail (with excuse)", "early"],
+      "registration_methods": ["mail", "in-person"],
+      "official_url": "https://www.votetexas.gov/"
+    },
+    "FL": {
+      "name": "Florida",
+      "registration_deadline": "2024-10-07",
+      "early_voting_start": "2024-10-26",
+      "early_voting_end": "2024-11-02",
+      "election_day": "2024-11-05",
+      "id_required": {
+        "required": true,
+        "description": "Current and valid photo ID with signature required."
+      },
+      "voting_methods": ["in-person", "mail", "early"],
+      "registration_methods": ["online", "mail", "in-person"],
+      "official_url": "https://dos.myflorida.com/elections/"
+    },
+    "IL": {
+      "name": "Illinois",
+      "registration_deadline": "2024-10-08",
+      "early_voting_start": "2024-09-26",
+      "early_voting_end": "2024-11-04",
+      "election_day": "2024-11-05",
+      "id_required": {
+        "required": false,
+        "description": "ID is not required unless registering to vote on Election Day or if you registered by mail without providing ID."
+      },
+      "voting_methods": ["in-person", "mail", "early"],
+      "registration_methods": ["online", "mail", "in-person"],
+      "official_url": "https://www.elections.il.gov/"
+    }
+  },
+  "general_faqs": [
+    {
+      "question": "Do I need to re-register if I moved?",
+      "answer": "Yes, if you moved to a new state or county, you typically need to update your registration."
+    },
+    {
+      "question": "Can I vote if I am a college student?",
+      "answer": "Yes, you can usually choose to register at your home address or your college address, but you cannot vote in both places."
+    }
+  ]
+}
