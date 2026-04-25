@@ -1,23 +1,23 @@
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from app.prompts import build_chat_prompt, REFUSAL_TEMPLATES
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
-if API_KEY:
-    genai.configure(api_key=API_KEY)
+_client = genai.Client(api_key=API_KEY) if API_KEY else None
 
-# Primary model: gemini-1.5-flash — reliable, fast, low-cost
-# Fallback: gemini-1.5-flash-8b — even cheaper, still solid for factual Q&A
-PRIMARY_MODEL   = "gemini-1.5-flash"
-FALLBACK_MODEL  = "gemini-1.5-flash-8b"
+# gemini-2.5-flash-lite: cheapest in the new SDK, verified working
+# gemini-2.5-flash:      fallback if lite fails
+PRIMARY_MODEL  = "gemini-2.5-flash-lite"
+FALLBACK_MODEL = "gemini-2.5-flash"
 
 # Indian political parties/leaders — partisan refusal guard
 PARTISAN_KEYWORDS = [
-    "vote for", "vote bjp", "vote congress", "vote aap", "vote tmc",
+    "vote bjp", "vote congress", "vote aap", "vote tmc", "vote for",
     "modi", "rahul gandhi", "kejriwal", "mamata", "yogi", "nitish",
-    "bjp", "congress", "aam aadmi party", "shiv sena", "ncp", "bsp", "sp",
-    "endorse", "best party", "which party", "support party",
-    "opinion on party", "party better", "who should i vote"
+    "bjp", "congress party", "aam aadmi party", "shiv sena", "ncp", "bsp", "sp",
+    "best party", "which party", "support party", "party better",
+    "who should i vote", "endorse"
 ]
 
 def check_for_refusal(message: str) -> str | None:
@@ -28,15 +28,15 @@ def check_for_refusal(message: str) -> str | None:
 
 
 def _call_model(model_name: str, system_instruction: str, user_message: str) -> str:
-    model = genai.GenerativeModel(
-        model_name=model_name,
-        system_instruction=system_instruction
-    )
-    response = model.generate_content(
-        user_message,
-        generation_config=genai.GenerationConfig(
+    if not _client:
+        raise RuntimeError("GEMINI_API_KEY not configured.")
+    response = _client.models.generate_content(
+        model=model_name,
+        contents=user_message,
+        config=types.GenerateContentConfig(
+            system_instruction=system_instruction,
             temperature=0.2,
-            max_output_tokens=512
+            max_output_tokens=512,
         )
     )
     return response.text
@@ -50,15 +50,13 @@ def generate_reply(user_message: str, grounded_context: dict) -> str:
 
     system_instruction = build_chat_prompt(grounded_context)
 
-    # Try primary model, fall back to cheaper model on any error
     for model_name in [PRIMARY_MODEL, FALLBACK_MODEL]:
         try:
             return _call_model(model_name, system_instruction, user_message)
         except Exception as e:
-            print(f"[VoteWise] Model {model_name} failed: {e}")
-            continue  # try fallback
+            print(f"[VoteWise] Model {model_name} failed: {type(e).__name__}: {e}")
+            continue
 
-    # Both models failed — return friendly guidance
     return (
         "⚠️ I'm having trouble reaching the AI service right now. "
         "For immediate help, please:\n\n"
