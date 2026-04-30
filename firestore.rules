@@ -1,8 +1,26 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /analytics/{doc=**} { allow read, write: if false; }
-    match /cache/{doc=**} { allow read: if request.auth != null; allow write: if false; }
-    match /rate_limits/{uid} { allow read, write: if false; }
+
+    // Analytics — server-only writes, no client access
+    match /analytics/{doc=**} {
+      allow read, write: if false;
+    }
+
+    // Cache — authenticated read only, server writes
+    match /cache/{doc=**} {
+      allow read:  if request.auth != null;
+      allow write: if false;
+    }
+
+    // Rate limits — server-only, clients cannot read or tamper
+    match /rate_limits/{uid} {
+      allow read, write: if false;
+    }
+
+    // Catch-all — deny everything not explicitly matched above
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }

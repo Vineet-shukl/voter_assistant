@@ -32,14 +32,33 @@ def get_db():
     return _db
 
 
-# ── CORS headers ──────────────────────────────────────────────────────────────
-CORS_HEADERS = {
-    "Access-Control-Allow-Origin":  "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+# ── CORS — restricted to production domains only ─────────────────────────────
+_ALLOWED_ORIGINS = {
+    "https://voterwise-c0186.web.app",
+    "https://voterwise-c0186.firebaseapp.com",
 }
+_DEFAULT_ORIGIN = "https://voterwise-c0186.web.app"
+
+def _cors(request: https_fn.Request) -> dict:
+    """Return CORS headers, reflecting origin only if it is in the allowlist."""
+    origin = request.headers.get("Origin", "")
+    allowed = origin if origin in _ALLOWED_ORIGINS else _DEFAULT_ORIGIN
+    return {
+        "Access-Control-Allow-Origin":  allowed,
+        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Max-Age":       "3600",
+        "Vary":                         "Origin",
+    }
+
+# Backwards-compatible alias used by public endpoints (no sensitive data)
+CORS_HEADERS = {"Access-Control-Allow-Origin": "*", "Vary": "Origin"}
 
 REGION = options.SupportedRegion.ASIA_SOUTH1   # Mumbai — closest to India
+
+# ── Input limits ───────────────────────────────────────────────────────────────
+MAX_MESSAGE_LEN  = 500    # characters
+MAX_CONTEXT_KEYS = 10    # keys in context dict
 
 
 # ── Auth + Rate Limiting ──────────────────────────────────────────────────────
@@ -56,7 +75,7 @@ def _verify_and_rate_limit(request: https_fn.Request) -> tuple[Optional[str], Op
 
     uid = None
     if auth_header.startswith("Bearer "):
-        id_token = auth_header.split("Bearer ")[1]
+        id_token = auth_header.split("Bearer ")[1].strip()
         try:
             decoded = auth.verify_id_token(id_token)
             uid = decoded["uid"]
@@ -64,9 +83,12 @@ def _verify_and_rate_limit(request: https_fn.Request) -> tuple[Optional[str], Op
             logging.warning("Token verification failed: %s", exc)
             # Fall through to IP-based rate limiting
 
-    # If no valid Firebase token, use IP hash as anonymous session key
+    # If no valid Firebase token, use IP hash as anonymous session key.
+    # Always use the LAST IP in X-Forwarded-For — Cloud Run appends the real
+    # client IP at the end, which callers cannot spoof.
     if not uid:
-        ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
+        forwarded = request.headers.get("X-Forwarded-For", "")
+        ip = forwarded.split(",")[-1].strip() if forwarded else (request.remote_addr or "unknown")
         uid = "anon-" + hashlib.sha256(ip.encode()).hexdigest()[:16]
 
     # Rate limiting via Firestore counter
@@ -144,8 +166,9 @@ def pick_followups(reply: str) -> list[str]:
 # ═══════════════════════════════════════════════════════════════════════════════
 @https_fn.on_request(region=REGION, memory=options.MemoryOption.MB_512, timeout_sec=120)
 def chat(request: https_fn.Request) -> https_fn.Response:
+    cors = _cors(request)
     if request.method == "OPTIONS":
-        return https_fn.Response("", status=204, headers=CORS_HEADERS)
+        return https_fn.Response("", status=204, headers=cors)
 
     uid, err = _verify_and_rate_limit(request)
     if err:
@@ -153,18 +176,28 @@ def chat(request: https_fn.Request) -> https_fn.Response:
 
     try:
         body    = request.get_json(silent=True) or {}
-        message = str(body.get("message", "")).strip()
-        context = dict(body.get("context", {}))
+        # Enforce message length limit to prevent prompt injection & quota abuse
+        message = str(body.get("message", "")).strip()[:MAX_MESSAGE_LEN]
+        # Sanitize context: allow only known safe string/list values, bounded size
+        raw_ctx = body.get("context", {})
+        if not isinstance(raw_ctx, dict):
+            raw_ctx = {}
+        _SAFE_CTX_KEYS = {"state", "language", "session_id"}
+        context = {
+            k: str(v)[:100]                    # cap each value at 100 chars
+            for k, v in raw_ctx.items()
+            if k in _SAFE_CTX_KEYS             # whitelist known keys only
+        }
     except Exception:
         return https_fn.Response(
             json.dumps({"error": "Invalid JSON body"}),
-            status=400, headers={**CORS_HEADERS, "Content-Type": "application/json"}
+            status=400, headers={**cors, "Content-Type": "application/json"}
         )
 
     if not message:
         return https_fn.Response(
             json.dumps({"error": "message field is required"}),
-            status=400, headers={**CORS_HEADERS, "Content-Type": "application/json"}
+            status=400, headers={**cors, "Content-Type": "application/json"}
         )
 
     t0 = time.time()
@@ -177,14 +210,14 @@ def chat(request: https_fn.Request) -> https_fn.Response:
                   int((time.time() - t0) * 1000))
         return https_fn.Response(
             json.dumps({"reply": local_reply, "suggested_followups": followups, "source": "local"}),
-            status=200, headers={**CORS_HEADERS, "Content-Type": "application/json"}
+            status=200, headers={**cors, "Content-Type": "application/json"}
         )
 
-    # Layer 2: rules engine enrichment
-    state = context.get("state")
-    if state and isinstance(state, str) and len(state) == 2:
-        deadlines = get_deadlines(state)
-        rules     = get_state_rules(state)
+    # Layer 2: rules engine enrichment — add state data to context
+    state = context.get("state", "")
+    if state and isinstance(state, str) and len(state) == 2 and state.isalpha():
+        deadlines = get_deadlines(state.upper())
+        rules     = get_state_rules(state.upper())
         if "error" not in deadlines:
             context["state_deadlines"] = deadlines
         if "error" not in rules:
@@ -199,7 +232,7 @@ def chat(request: https_fn.Request) -> https_fn.Response:
 
     return https_fn.Response(
         json.dumps({"reply": reply, "suggested_followups": followups, "source": source}),
-        status=200, headers={**CORS_HEADERS, "Content-Type": "application/json"}
+        status=200, headers={**cors, "Content-Type": "application/json"}
     )
 
 
@@ -208,8 +241,9 @@ def chat(request: https_fn.Request) -> https_fn.Response:
 # ═══════════════════════════════════════════════════════════════════════════════
 @https_fn.on_request(region=REGION, memory=options.MemoryOption.MB_512, timeout_sec=30)
 def eligibility(request: https_fn.Request) -> https_fn.Response:
+    cors = _cors(request)
     if request.method == "OPTIONS":
-        return https_fn.Response("", status=204, headers=CORS_HEADERS)
+        return https_fn.Response("", status=204, headers=cors)
 
     uid, err = _verify_and_rate_limit(request)
     if err:
@@ -218,23 +252,26 @@ def eligibility(request: https_fn.Request) -> https_fn.Response:
     try:
         age     = int(request.args.get("age", -1))
         citizen = request.args.get("citizen", "false").lower() == "true"
-        state   = str(request.args.get("state", "DL")).upper()
+        state_raw = str(request.args.get("state", "DL"))[:2].upper()
+        if not state_raw.isalpha():
+            raise ValueError("state must be alphabetic")
+        state = state_raw
     except ValueError:
         return https_fn.Response(
             json.dumps({"error": "Invalid query parameters"}),
-            status=400, headers={**CORS_HEADERS, "Content-Type": "application/json"}
+            status=400, headers={**cors, "Content-Type": "application/json"}
         )
 
     if not (0 <= age <= 150):
         return https_fn.Response(
             json.dumps({"error": "age must be between 0 and 150"}),
-            status=422, headers={**CORS_HEADERS, "Content-Type": "application/json"}
+            status=422, headers={**cors, "Content-Type": "application/json"}
         )
 
     result = check_eligibility(age, citizen, state)
     return https_fn.Response(
         json.dumps(result),
-        status=200, headers={**CORS_HEADERS, "Content-Type": "application/json"}
+        status=200, headers={**cors, "Content-Type": "application/json"}
     )
 
 
@@ -243,25 +280,26 @@ def eligibility(request: https_fn.Request) -> https_fn.Response:
 # ═══════════════════════════════════════════════════════════════════════════════
 @https_fn.on_request(region=REGION, memory=options.MemoryOption.MB_512, timeout_sec=30)
 def timeline(request: https_fn.Request) -> https_fn.Response:
+    cors = _cors(request)
     if request.method == "OPTIONS":
-        return https_fn.Response("", status=204, headers=CORS_HEADERS)
+        return https_fn.Response("", status=204, headers=cors)
 
-    state = str(request.args.get("state", "")).upper()
-    if len(state) != 2:
+    state = str(request.args.get("state", ""))[:2].upper()
+    if len(state) != 2 or not state.isalpha():
         return https_fn.Response(
             json.dumps({"error": "state must be a 2-letter code (e.g. DL, MH)"}),
-            status=400, headers={**CORS_HEADERS, "Content-Type": "application/json"}
+            status=400, headers={**cors, "Content-Type": "application/json"}
         )
 
     deadlines = get_deadlines(state)
     if "error" in deadlines:
         return https_fn.Response(
             json.dumps(deadlines),
-            status=404, headers={**CORS_HEADERS, "Content-Type": "application/json"}
+            status=404, headers={**cors, "Content-Type": "application/json"}
         )
     return https_fn.Response(
         json.dumps(deadlines),
-        status=200, headers={**CORS_HEADERS, "Content-Type": "application/json"}
+        status=200, headers={**cors, "Content-Type": "application/json"}
     )
 
 
