@@ -91,7 +91,15 @@ checkBtn.addEventListener("click",async()=>{
     const r=await fetch(`/eligibility?age=${age}&citizen=${citizen}&state=${state}`,{headers});const d=await r.json();eligibilityResult.classList.remove("hidden");
     if(d.eligible){eligibilityResult.textContent="✅ You appear eligible to vote!";eligibilityResult.className="eligible"}
     else{eligibilityResult.textContent=`❌ ${d.reasons[0]}`;eligibilityResult.className="ineligible"}
-  }catch{eligibilityResult.textContent="⚠️ Could not check.";eligibilityResult.className="ineligible";eligibilityResult.classList.remove("hidden")}
+  }catch(e){
+    eligibilityResult.className="ineligible";
+    eligibilityResult.classList.remove("hidden");
+    if(!navigator.onLine || e.message?.includes("Failed to fetch") || e.message?.includes("NetworkError")){
+      eligibilityResult.textContent="📶 Please check your internet connection.";
+    }else{
+      eligibilityResult.textContent="⚠️ Could not check.";
+    }
+  }
 });
 
 /* ===== CACHE ===== */
@@ -169,7 +177,15 @@ async function sendMessage(text){
     appendBot(data.reply,data.source||"ai");
     setFollowups(data.suggested_followups||pick_followups(data.reply));
     setCache(text,data);
-  }catch(e){typingIndicator.classList.add("hidden");appendBot("⚠️ Something went wrong. Visit [eci.gov.in](https://eci.gov.in) or call **1950**.","local");console.error(e)}
+  }catch(e){
+    typingIndicator.classList.add("hidden");
+    if(!navigator.onLine || e.message.includes("Failed to fetch") || e.message.includes("NetworkError")){
+      appendBot("📶 Please check your internet connection and try again.","local");
+    }else{
+      appendBot("⚠️ Something went wrong. Visit [eci.gov.in](https://eci.gov.in) or call **1950**.","local");
+    }
+    console.error(e);
+  }
   finally{
     isSending=false;
     try{perfTrace?.stop();}catch(_){}
