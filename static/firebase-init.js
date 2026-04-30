@@ -13,6 +13,8 @@ import { getPerformance, trace }
                              from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-performance.js';
 import { getRemoteConfig, fetchAndActivate }
                              from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-remote-config.js';
+import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken } 
+                             from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app-check.js';
 
 // ── Expose a promise that resolves to the ID token (or null) ─────────────────
 // app.js awaits window.__vwTokenReady before making API calls.
@@ -31,7 +33,7 @@ try {
   _resolveToken(null);   // unblock app.js immediately in offline mode
 }
 
-let analytics, perf, auth, remoteConfig;
+let analytics, perf, auth, remoteConfig, appCheck;
 
 if (firebaseConfig) {
   const app = initializeApp(firebaseConfig);
@@ -39,6 +41,17 @@ if (firebaseConfig) {
   perf         = getPerformance(app);
   auth         = getAuth(app);
   remoteConfig = getRemoteConfig(app);
+
+  // ── Initialize App Check ──────────────────────────────────────────────────
+  try {
+    appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider('6Ldxxxxxxxxxx_YOUR_RECAPTCHA_SITE_KEY_xxxxxxxxx'),
+      isTokenAutoRefreshEnabled: true
+    });
+    console.log('[VoteWise] App Check initialized.');
+  } catch (e) {
+    console.warn('[VoteWise] App Check failed to initialize:', e.message);
+  }
 
   // ── Remote Config defaults ────────────────────────────────────────────────
   remoteConfig.defaultConfig = {
@@ -78,4 +91,16 @@ if (firebaseConfig) {
 }
 
 // ── Expose Firebase helpers to app.js ─────────────────────────────────────────
-window.__firebase = { analytics, perf, trace, logEvent };
+window.__firebase = { 
+  analytics, perf, trace, logEvent, appCheck,
+  getAppCheckToken: async () => {
+    if (!appCheck) return null;
+    try {
+      const result = await getToken(appCheck, false);
+      return result.token;
+    } catch (e) {
+      console.warn("AppCheck getToken failed:", e);
+      return null;
+    }
+  }
+};

@@ -84,6 +84,10 @@ checkBtn.addEventListener("click",async()=>{
     if(window.__vwTokenReady) await window.__vwTokenReady;
     const headers={"Content-Type":"application/json"};
     if(window.__vwToken) headers["Authorization"]="Bearer "+window.__vwToken;
+    if(window.__firebase?.getAppCheckToken){
+      const acToken = await window.__firebase.getAppCheckToken();
+      if(acToken) headers["X-Firebase-AppCheck"] = acToken;
+    }
     const r=await fetch(`/eligibility?age=${age}&citizen=${citizen}&state=${state}`,{headers});const d=await r.json();eligibilityResult.classList.remove("hidden");
     if(d.eligible){eligibilityResult.textContent="✅ You appear eligible to vote!";eligibilityResult.className="eligible"}
     else{eligibilityResult.textContent=`❌ ${d.reasons[0]}`;eligibilityResult.className="ineligible"}
@@ -150,6 +154,10 @@ async function sendMessage(text){
     if(window.__vwTokenReady) await window.__vwTokenReady;
     const headers={"Content-Type":"application/json"};
     if(window.__vwToken) headers["Authorization"]="Bearer "+window.__vwToken;
+    if(window.__firebase?.getAppCheckToken){
+      const acToken = await window.__firebase.getAppCheckToken();
+      if(acToken) headers["X-Firebase-AppCheck"] = acToken;
+    }
     const res=await fetch("/chat",{method:"POST",headers,body:JSON.stringify({message:text,context:conversationContext})});
     typingIndicator.classList.add("hidden");
     if(!res.ok){

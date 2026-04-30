@@ -9,7 +9,7 @@ import time
 from typing import Optional
 
 import firebase_admin
-from firebase_admin import auth, firestore
+from firebase_admin import auth, firestore, app_check
 from firebase_functions import https_fn, options
 
 # Local modules (same package)
@@ -64,13 +64,34 @@ MAX_CONTEXT_KEYS = 10    # keys in context dict
 # ── Auth + Rate Limiting ──────────────────────────────────────────────────────
 RATE_LIMIT = 30   # max requests per hour per anonymous UID
 
+ENFORCE_APP_CHECK = False  # Set to True once reCAPTCHA is configured in the console
+
 def _verify_and_rate_limit(request: https_fn.Request) -> tuple[Optional[str], Optional[https_fn.Response]]:
     """
-    Verifies Firebase ID token if present, applies rate limiting.
+    Verifies Firebase App Check, ID token (if present), and applies rate limiting.
     If no token provided, uses IP-based UID (anonymous session).
-    Returns (uid, None) on success, (None, error_response) on rate limit.
+    Returns (uid, None) on success, (None, error_response) on rate limit or auth failure.
     """
     import hashlib
+    
+    # ── 1. App Check Verification ─────────────────────────────────────────────
+    if ENFORCE_APP_CHECK:
+        app_check_token = request.headers.get("X-Firebase-AppCheck", "")
+        if not app_check_token:
+            return None, https_fn.Response(
+                json.dumps({"error": "Unauthorized: Missing App Check token."}),
+                status=401, headers={**CORS_HEADERS, "Content-Type": "application/json"}
+            )
+        try:
+            app_check.verify_token(app_check_token)
+        except Exception as exc:
+            logging.warning("App Check verification failed: %s", exc)
+            return None, https_fn.Response(
+                json.dumps({"error": "Unauthorized: Invalid App Check token."}),
+                status=401, headers={**CORS_HEADERS, "Content-Type": "application/json"}
+            )
+
+    # ── 2. User Auth / IP Rate Limiting ──────────────────────────────────────
     auth_header = request.headers.get("Authorization", "")
 
     uid = None
