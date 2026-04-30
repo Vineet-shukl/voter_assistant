@@ -79,7 +79,12 @@ langSelect.addEventListener("change",()=>applyLang(langSelect.value));
 checkBtn.addEventListener("click",async()=>{
   const age=parseInt(ageinput.value,10),citizen=citizenCheck.checked,state=stateSelect.value||"DL";
   if(isNaN(age)||age<0||age>120){eligibilityResult.textContent="⚠️ Enter a valid age (0–120).";eligibilityResult.className="ineligible";eligibilityResult.classList.remove("hidden");return}
-  try{const r=await fetch(`/eligibility?age=${age}&citizen=${citizen}&state=${state}`);const d=await r.json();eligibilityResult.classList.remove("hidden");
+  try{
+    // Wait for Firebase anonymous auth to complete before calling the API
+    if(window.__vwTokenReady) await window.__vwTokenReady;
+    const headers={"Content-Type":"application/json"};
+    if(window.__vwToken) headers["Authorization"]="Bearer "+window.__vwToken;
+    const r=await fetch(`/eligibility?age=${age}&citizen=${citizen}&state=${state}`,{headers});const d=await r.json();eligibilityResult.classList.remove("hidden");
     if(d.eligible){eligibilityResult.textContent="✅ You appear eligible to vote!";eligibilityResult.className="eligible"}
     else{eligibilityResult.textContent=`❌ ${d.reasons[0]}`;eligibilityResult.className="ineligible"}
   }catch{eligibilityResult.textContent="⚠️ Could not check.";eligibilityResult.className="ineligible";eligibilityResult.classList.remove("hidden")}
@@ -119,16 +124,48 @@ async function sendMessage(text){
   const cached=getCache(text);
   if(cached){appendBot(cached.reply,"local");setFollowups(cached.suggested_followups||[]);return}
   isSending=true;typingIndicator.classList.remove("hidden");scrollBottom();
+
+  // ― Firebase Analytics: log each question ―
+  if(window.__firebase?.logEvent && window.__firebase?.analytics){
+    try{
+      const cat=text.toLowerCase().includes("register")?"registration":
+                text.toLowerCase().includes("epic")||text.toLowerCase().includes("voter id")?"epic":
+                text.toLowerCase().includes("booth")?"booth":"general";
+      window.__firebase.logEvent(window.__firebase.analytics,"question_asked",{
+        category:cat,
+        state:conversationContext.state||"none",
+        language:conversationContext.language||"English"
+      });
+    }catch(_){}
+  }
+
+  // ― Firebase Performance: trace per chat request ―
+  let perfTrace=null;
+  if(window.__firebase?.trace && window.__firebase?.perf){
+    try{perfTrace=window.__firebase.trace(window.__firebase.perf,"chat_request");perfTrace.start();}catch(_){}
+  }
+
   try{
-    const res=await fetch("/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text,context:conversationContext})});
+    // Wait for Firebase Auth token before calling protected API
+    if(window.__vwTokenReady) await window.__vwTokenReady;
+    const headers={"Content-Type":"application/json"};
+    if(window.__vwToken) headers["Authorization"]="Bearer "+window.__vwToken;
+    const res=await fetch("/chat",{method:"POST",headers,body:JSON.stringify({message:text,context:conversationContext})});
     typingIndicator.classList.add("hidden");
-    if(!res.ok)throw new Error(`HTTP ${res.status}`);
+    if(!res.ok){
+      const errBody=await res.text();
+      console.error("[VoteWise] API error:",res.status,errBody);
+      throw new Error(`HTTP ${res.status}: ${errBody}`);
+    }
     const data=await res.json();
     appendBot(data.reply,data.source||"ai");
     setFollowups(data.suggested_followups||pick_followups(data.reply));
     setCache(text,data);
   }catch(e){typingIndicator.classList.add("hidden");appendBot("⚠️ Something went wrong. Visit [eci.gov.in](https://eci.gov.in) or call **1950**.","local");console.error(e)}
-  finally{isSending=false}
+  finally{
+    isSending=false;
+    try{perfTrace?.stop();}catch(_){}
+  }
 }
 
 /* ===== FORM SUBMIT ===== */
