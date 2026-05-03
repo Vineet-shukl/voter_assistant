@@ -187,6 +187,7 @@ voter_assistant/
 - `prefers-reduced-motion` media query respected.
 - Semantic HTML (`<main>`, `<header>`, `<form>`, `<button>`).
 
+
 ---
 
 ## 📜 License
@@ -201,6 +202,6 @@ MIT © 2026 — Free to use, fork, and adapt for civic good.
 
 [🌐 Live Demo](https://voterwise-c0186.web.app) · [📞 ECI Helpline: 1950](tel:1950) · [🏛️ eci.gov.in](https://eci.gov.in)
 
-*Data is sourced from ECI and is illustrative. Always verify critical dates and rules at [eci.gov.in](https://eci.gov.in) or by calling the National Voter Helpline at **1950** (toll-free).*
+*Data is sourced from ECI and is illustrative. Always verify critical dates & rules at [eci.gov.in](https://eci.gov.in) or by calling the National Voter Helpline at **1950** (toll-free).*
 
 </div>
