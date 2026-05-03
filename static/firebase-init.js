@@ -45,7 +45,7 @@ if (firebaseConfig) {
   // ── Initialize App Check ──────────────────────────────────────────────────
   try {
     appCheck = initializeAppCheck(app, {
-      provider: new ReCaptchaEnterpriseProvider('6Ldxxxxxxxxxx_YOUR_RECAPTCHA_SITE_KEY_xxxxxxxxx'),
+      provider: new ReCaptchaEnterpriseProvider('6LcA49YsAAAAAKWpKbcoe31z5j6-nHCZfMVdyHf7'),
       isTokenAutoRefreshEnabled: true
     });
     console.log('[VoteWise] App Check initialized.');

@@ -58,7 +58,7 @@ MAX_CONTEXT_KEYS: int = 10
 # Maximum API requests per hour per anonymous or authenticated user.
 RATE_LIMIT: int = 30
 # Set to True once reCAPTCHA App Check is configured in the Firebase console.
-ENFORCE_APP_CHECK: bool = False
+ENFORCE_APP_CHECK: bool = True
 # Supported deployment region — Mumbai, closest to India.
 REGION = options.SupportedRegion.ASIA_SOUTH1
 # Known-safe context keys accepted from client requests (allowlist).
