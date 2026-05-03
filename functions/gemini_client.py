@@ -45,9 +45,9 @@ def _ensure_vertex_init() -> None:
 
 # ── Model selection (overridable via environment variables) ───────────────────
 # Primary model: cost-efficient flash variant for most queries.
-PRIMARY_MODEL: str = os.environ.get("ACTIVE_MODEL", "gemini-2.5-flash-lite-preview-06-17")
+PRIMARY_MODEL: str = os.environ.get("ACTIVE_MODEL", "gemini-1.5-flash")
 # Fallback model: used automatically if PRIMARY_MODEL fails.
-FALLBACK_MODEL: str = os.environ.get("FALLBACK_MODEL", "gemini-2.5-flash")
+FALLBACK_MODEL: str = os.environ.get("FALLBACK_MODEL", "gemini-1.5-pro")
 
 # ── Firestore cache settings ──────────────────────────────────────────────────
 # Cache lifetime: 24 hours in seconds.
