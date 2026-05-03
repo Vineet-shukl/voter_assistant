@@ -1,19 +1,23 @@
-"""
+﻿"""
 Integration tests for VoteWise India Cloud Function endpoints.
 
 Tests cover:
-    - /health — liveness probe
-    - /chat   — message routing, caching, error paths
-    - /eligibility — input validation and eligibility logic
-    - /timeline    — state timeline lookup
-    - /states      — state list endpoint
+    - /health -- liveness probe
+    - /chat   -- message routing, caching, error paths
+    - /eligibility -- input validation and eligibility logic
+    - /timeline    -- state timeline lookup
+    - /states      -- state list endpoint
 
 All Firebase dependencies are mocked so tests run offline without any GCP
 credentials.
 """
 
 import json
+import os
 from unittest.mock import MagicMock, patch
+
+# Disable App Check before importing main so the module-level constant is False.
+os.environ.setdefault("ENFORCE_APP_CHECK", "false")
 
 import pytest
 from flask import Request
@@ -146,7 +150,7 @@ class TestChatEndpoint:
             headers={"X-Forwarded-For": "10.0.0.1"},
         )
         resp = chat(req)
-        # Should not error — truncation is silent.
+        # Should not error -- truncation is silent.
         assert resp.status_code in (200, 429)
 
     def test_chat_options_preflight(self):
@@ -247,7 +251,7 @@ class TestEligibilityEndpoint:
             headers={"X-Forwarded-For": "10.0.0.8"},
         )
         resp = eligibility(req)
-        # State is truncated to 2 chars by the endpoint — should not crash.
+        # State is truncated to 2 chars by the endpoint -- should not crash.
         assert resp.status_code in (200, 400, 422)
 
 

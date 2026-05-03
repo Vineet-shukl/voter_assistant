@@ -1,4 +1,4 @@
-"""Shared pytest fixtures for the VoteWise India test suite.
+﻿"""Shared pytest fixtures for the VoteWise India test suite.
 
 This conftest.py is discovered automatically by pytest and provides
 reusable fixtures across test_api.py, test_rules.py, and test_safety.py.
@@ -10,44 +10,21 @@ Example:
 """
 from __future__ import annotations
 
+import sys
+import os
+
+# Ensure both the repo root and the functions/ package are importable.
+# This mirrors the PYTHONPATH=.:functions set in the CI workflow.
+_repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_functions_dir = os.path.join(_repo_root, "functions")
+for _p in (_repo_root, _functions_dir):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 from typing import Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-
-# ---------------------------------------------------------------------------
-# App client fixture
-# ---------------------------------------------------------------------------
-
-@pytest.fixture(scope="session")
-def app():
-    """Return a configured Flask test app with Firebase mocked out.
-
-    Scope is 'session' so Firebase is initialised only once per test run,
-    matching the singleton pattern used in production code.
-
-    Yields:
-        flask.Flask: The application instance under test.
-    """
-    with patch("firebase_admin.initialize_app"), \
-         patch("firebase_admin.firestore.client", return_value=MagicMock()):
-        from functions.main import app as flask_app
-        flask_app.config["TESTING"] = True
-        yield flask_app
-
-
-@pytest.fixture()
-def client(app):
-    """Return a Flask test client for making HTTP requests.
-
-    Args:
-        app: The Flask app fixture (injected by pytest).
-
-    Returns:
-        flask.testing.FlaskClient: Ready-to-use test client.
-    """
-    return app.test_client()
 
 
 # ---------------------------------------------------------------------------
@@ -59,7 +36,7 @@ def mock_db():
     """Return a MagicMock that mimics the Firestore client interface.
 
     Provides pre-configured return values for the common
-    collection → document → get / set / update chain.
+    collection -> document -> get / set / update chain.
 
     Returns:
         unittest.mock.MagicMock: Mock Firestore client.
