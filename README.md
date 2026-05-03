@@ -2,12 +2,12 @@
 
 # 🗳️ VoteWise India
 
-### *Your non-partisan, enterprise-grade AI guide to Indian elections*
+### *Your non-partisan AI guide to Indian elections*
 
 [![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Firebase_Hosting-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://voterwise-c0186.web.app)
 [![Firebase Functions](https://img.shields.io/badge/Firebase_Functions-Gen_2-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/docs/functions)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![Gemini](https://img.shields.io/badge/Gemini_2.5_Flash-Vertex_AI-8E44AD?style=for-the-badge&logo=google&logoColor=white)](https://cloud.google.com/vertex-ai)
+[![Gemini](https://img.shields.io/badge/Gemini_1.5_Flash-Google_AI-8E44AD?style=for-the-badge&logo=google&logoColor=white)](https://aistudio.google.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-FF9933?style=for-the-badge)](LICENSE)
 
 <br/>
@@ -24,122 +24,118 @@
 
 ## ✨ What is VoteWise India?
 
-VoteWise India is an **enterprise-grade conversational election assistant** built for Indian citizens. It combines a deterministic rules engine (grounded in real ECI data) with Google's Gemini AI to give fast, accurate, non-partisan answers to questions about the Indian election process.
+VoteWise India is a **conversational election assistant** built for Indian citizens. It combines a deterministic rules engine (grounded in real ECI data) with Google's Gemini AI to give fast, accurate, non-partisan answers to questions about the Indian election process.
 
 Whether you're a first-time voter at 18 or someone who just moved cities and needs to update their registration — VoteWise speaks your language. Literally. **It natively supports all 22 official Indian languages** via instant UI translation and language-aware AI prompting.
 
 ---
 
-## 🏗️ 100/100 Enterprise Architecture
-
-VoteWise India has been fully hardened and refactored from a simple API to a robust, scalable serverless architecture:
+## 🏗️ Architecture
 
 ```text
 ┌────────────────────────────────────────────────────────────┐
 │                   USER  (Browser / Mobile)                  │
 │       Glassmorphism UI · 22 Languages · Quick Nav Bar       │
 └──────────────────────────┬─────────────────────────────────┘
-                           │  HTTPS + Firebase App Check
+                           │  HTTPS
                            ▼
 ┌────────────────────────────────────────────────────────────┐
 │             FIREBASE HOSTING (Global Edge CDN)              │
-│       Strict CSP · HSTS · Frame Ancestors · Cache TTL       │
 └──────────────────────────┬─────────────────────────────────┘
                            │
                            ▼
 ┌────────────────────────────────────────────────────────────┐
 │      FIREBASE FUNCTIONS (Gen 2 / Google Cloud Run)          │
 │                                                             │
-│   POST /chat ──► Layer 1: Local Keyword Match  (0 tokens)   │
+│   POST /chat ──► Layer 1: Partisan Guard    (instant)       │
 │                      │                                      │
-│                      ▼ (if no match)                        │
-│              Layer 2: Rules Engine  (structured ECI data)   │
+│                      ▼                                      │
+│              Layer 2: Firestore Cache       (24h TTL)       │
 │                      │                                      │
-│                      ▼ (complex / state-specific only)      │
-│              Layer 3: Gemini 2.5 Flash  (Vertex AI)         │
+│                      ▼                                      │
+│              Layer 3: Gemini 1.5 Flash      (Google AI)     │
 │                                                             │
 │   GET /eligibility ──► Deterministic eligibility check      │
 │   GET /timeline    ──► State election schedule JSON         │
 │   GET /states      ──► Supported state list                 │
+│   GET /health      ──► Health probe                         │
 └────────────────────────────────────────────────────────────┘
                            │
                            ▼
 ┌────────────────────────────────────────────────────────────┐
-│       FIRESTORE (Rate Limiting & Deterministic Cache)       │
+│       FIRESTORE (Rate Limiting & Response Cache)            │
 └────────────────────────────────────────────────────────────┘
 ```
 
-### Three-Layer Hybrid AI System
+### Three-Layer AI System
 
 | Layer | Trigger | Speed | API Cost |
 |---|---|---|---|
-| ⚡ **Local Keywords** | 17 built-in topics (EPIC, EVM, Form 6…) | Instant | Zero |
-| 🗂️ **Rules Engine** | State-specific data enrichment | ~1ms | Zero |
-| 🤖 **Gemini AI** | Complex / unique queries only | ~1–2s | Minimal |
+| 🛡️ **Partisan Guard** | Political party / candidate mentions | Instant | Zero |
+| 🗂️ **Firestore Cache** | Repeated questions (24h TTL) | ~10ms | Zero |
+| 🤖 **Gemini 1.5 Flash** | New, unique queries | ~1–2s | Minimal |
 
-> **~80% of common questions are answered locally or served from Firestore cache — saving API tokens and significantly reducing latency.**
-
----
-
-## 🔒 Security Hardening & Abuse Prevention (30/30)
-
-This application has undergone a full security audit (`bandit`, `flake8`) and implements the following enterprise security controls:
-
-*   **Firebase App Check (reCAPTCHA Enterprise):** Device attestation guarantees that only your genuine web app can communicate with the backend, completely blocking bots, scrapers, and cURL requests.
-*   **Distributed Rate Limiting:** Identifies real user IPs from the `X-Forwarded-For` chain and rate-limits them via atomic Firestore transactions (Fail-Open mechanism).
-*   **Locked-down Firestore Rules:** `allow read, write: if false;` ensures no client SDK can bypass the backend to scrape the cache or analytics databases.
-*   **Strict CORS & HTTP Headers:** Locked down to production domains with comprehensive CSP, HSTS, and X-Frame-Options headers.
-*   **Non-Partisan Guardrails:** Deterministic keyword blocking intercepts any mentions of political parties or candidates and returns a polite refusal before ever calling the LLM.
+> **Repeated questions are served from Firestore cache — zero AI cost on cache hits.**
 
 ---
 
-## 🚀 CI/CD & Testing Infrastructure
+## 🔒 Security
 
-VoteWise India features a fully automated DevOps pipeline:
-
-*   **GitHub Actions:** Configured in `.github/workflows/deploy.yml`. Every push to the `main` branch automatically triggers dependency installation, testing, and deployment to Firebase.
-*   **Isolated Mocked Tests:** The `pytest` suite tests Firebase `https_fn.Request` objects directly using mocked Flask environments. This means tests execute locally in milliseconds without requiring a live Firestore connection, ensuring reliable CI builds.
+- **Distributed Rate Limiting:** Per-user/IP rate limiting via atomic Firestore transactions (30 req/hr).
+- **Locked-down Firestore Rules:** `allow read, write: if false` — no client SDK access.
+- **Strict CORS & HTTP Headers:** CSP, HSTS, X-Frame-Options, Referrer-Policy locked to production domains.
+- **Non-Partisan Guardrails:** Keyword blocking intercepts political party/candidate mentions before calling the LLM.
+- **Firebase Secrets:** `GEMINI_API_KEY` stored as a Firebase Secret (never in code or env files).
 
 ---
 
-## 🛠️ Local Setup & Deployment
+## 🚀 CI/CD
+
+Every push to `main` automatically deploys via **GitHub Actions**:
+
+1. Checks out code
+2. Sets up Python 3.11 & creates `functions/venv`
+3. Installs dependencies (`google-generativeai`, `firebase-admin`, etc.)
+4. Deploys Functions + Hosting to Firebase
+
+**Required GitHub Secrets:**
+
+| Secret | How to get it |
+|---|---|
+| `FIREBASE_TOKEN` | Run `firebase login:ci` locally |
+| *(Firebase Secret)* `GEMINI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) → set via `npx firebase-tools functions:secrets:set GEMINI_API_KEY` |
+
+---
+
+## 🛠️ Local Setup
 
 ### Prerequisites
-*   Node.js 18+ (for Firebase CLI)
-*   Python 3.11+
-*   Google Cloud Project with Vertex AI enabled
-*   Firebase CLI (`npm install -g firebase-tools`)
+- Node.js 18+ and `npm install -g firebase-tools`
+- Python 3.11+
+- A Gemini API key from [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
 
-### 1. Local Development
+### 1. Clone & Install
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/voter_assistant.git
+git clone https://github.com/Vineet-shukl/voter_assistant.git
 cd voter_assistant
 
-# Install Firebase Emulators (if needed) and backend dependencies
 cd functions
 python -m venv venv
-venv\Scripts\activate      # Windows
-# source venv/bin/activate # macOS/Linux
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # macOS/Linux
 pip install -r requirements.txt
-
-# Run locally using Firebase Emulators
-cd ..
-firebase emulators:start
 ```
 
-### 2. Testing
+### 2. Set the Gemini API Key (Firebase Secret)
 ```bash
-# Run the isolated unit tests (mocks Firebase functions)
-pytest tests/ -v
+npx firebase-tools functions:secrets:set GEMINI_API_KEY
+# Paste your key when prompted
 ```
 
-### 3. CI/CD Deployment
-This project uses GitHub Actions for continuous deployment. To enable it:
-1. Run `firebase login:ci` locally to generate a token.
-2. Go to your GitHub repository **Settings > Secrets and variables > Actions**.
-3. Add a repository secret named `FIREBASE_TOKEN` and paste your token.
-4. Push to the `main` branch. The action will automatically test and deploy your app.
+### 3. Deploy
+```bash
+npx firebase-tools deploy --only functions,hosting
+```
 
 ---
 
@@ -149,44 +145,42 @@ This project uses GitHub Actions for continuous deployment. To enable it:
 voter_assistant/
 │
 ├── .github/workflows/
-│   └── deploy.yml           # Automated CI/CD pipeline
+│   └── deploy.yml           # GitHub Actions CI/CD pipeline
 │
-├── functions/               # Firebase Gen 2 Cloud Functions (Python)
+├── functions/               # Firebase Gen 2 Cloud Functions (Python 3.11)
 │   ├── main.py              # Endpoints, CORS, Auth, Rate Limiting
-│   ├── gemini_client.py     # Vertex AI wrapper with Firestore caching
+│   ├── gemini_client.py     # Gemini API wrapper with Firestore caching
 │   ├── rules_engine.py      # ECI data lookup + local deterministic answers
 │   ├── prompts.py           # System prompt builder
 │   ├── requirements.txt     # Python dependencies
 │   └── data/
-│       └── election_data.json # ECI election schedules (13 states/UTs)
+│       └── election_data.json # ECI election schedules
 │
 ├── static/                  # Firebase Hosting Frontend
 │   ├── index.html           # Chat UI (glassmorphism)
 │   ├── style.css            # India tricolor design system
 │   ├── app.js               # UI logic and API fetch layer
-│   └── firebase-init.js     # App Check & anonymous auth initialization
+│   └── firebase-init.js     # Firebase SDK initialization
 │
 ├── tests/                   # Pytest suite
-│   ├── test_api.py          # Firebase function mock tests
-│   ├── test_rules.py        # Rules engine unit tests
-│   └── test_safety.py       # Partisan refusal tests
+│   ├── test_api.py
+│   ├── test_rules.py
+│   └── test_safety.py
 │
-├── firebase.json            # Firebase Hosting/Functions configuration
+├── firebase.json            # Firebase configuration
 └── firestore.rules          # Locked-down security rules
 ```
 
 ---
 
-## ♿ Accessibility & UI/UX
+## ♿ Accessibility & UI
 
-- **22 Indian Languages:** Dropdown selector instantly translates UI elements and instructs Gemini to respond in the chosen language.
-- **Top Quick Navigator:** Horizontal chip bar for instant 1-tap access to common queries.
-- `aria-live="polite"` on chat log for screen readers.
-- Full keyboard navigation (Tab + Enter) and bright `:focus-visible` outlines.
-- Mobile-optimized input bars that never collapse on ultra-small screens (`< 360px` breakpoints).
-- `prefers-reduced-motion` media query respected.
-- Semantic HTML (`<main>`, `<header>`, `<form>`, `<button>`).
-
+- **22 Indian Languages** — instant UI translation + AI responds in chosen language
+- `aria-live="polite"` on chat log for screen readers
+- Full keyboard navigation (Tab + Enter)
+- Mobile-optimized for screens down to 360px
+- `prefers-reduced-motion` respected
+- Semantic HTML (`<main>`, `<header>`, `<form>`, `<button>`)
 
 ---
 
@@ -202,6 +196,6 @@ MIT © 2026 — Free to use, fork, & adapt for civic good.
 
 [🌐 Live Demo](https://voterwise-c0186.web.app) · [📞 ECI Helpline: 1950](tel:1950) · [🏛️ eci.gov.in](https://eci.gov.in)
 
-*Data is sourced from ECI and is illustrative. Always verify critical dates and rules at [eci.gov.in](https://eci.gov.in) or by calling the National Voter Helpline at **1950** (toll-free).*
+*Data sourced from ECI. Always verify critical dates at [eci.gov.in](https://eci.gov.in) or call **1950** (toll-free).*
 
 </div>
