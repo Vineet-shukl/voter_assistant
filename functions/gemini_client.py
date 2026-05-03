@@ -19,8 +19,7 @@ import os
 import time
 from typing import Optional
 
-import vertexai
-from vertexai.generative_models import GenerativeModel, GenerationConfig
+# Lazy imports for vertexai to avoid deployment timeouts
 from google.cloud import firestore as firestore_client
 
 from prompts import build_chat_prompt, REFUSAL_TEMPLATES
@@ -39,6 +38,7 @@ def _ensure_vertex_init() -> None:
     """
     global _vertex_initialized
     if not _vertex_initialized:
+        import vertexai
         vertexai.init(project=PROJECT_ID, location=REGION)
         _vertex_initialized = True
 
@@ -200,6 +200,8 @@ def _call_vertex(model_name: str, system_instruction: str, user_message: str) ->
         Any exception raised by the Vertex AI SDK (caller handles retries).
     """
     _ensure_vertex_init()
+    from vertexai.generative_models import GenerativeModel, GenerationConfig
+    
     model = GenerativeModel(model_name, system_instruction=system_instruction)
     gen_cfg = GenerationConfig(temperature=_TEMPERATURE, max_output_tokens=_MAX_OUTPUT_TOKENS)
     response = model.generate_content(user_message, generation_config=gen_cfg)
