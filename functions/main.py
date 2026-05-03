@@ -302,7 +302,7 @@ def pick_followups(reply: str) -> list[str]:
 # CLOUD FUNCTION: /chat
 # ═══════════════════════════════════════════════════════════════════════════════
 
-@https_fn.on_request(region=REGION, memory=options.MemoryOption.MB_512, timeout_sec=120)
+@https_fn.on_request(region=REGION, memory=options.MemoryOption.MB_512, timeout_sec=120, secrets=["GEMINI_API_KEY"])
 def chat(request: https_fn.Request) -> https_fn.Response:
     """Primary AI chat endpoint for VoteWise India.
 
