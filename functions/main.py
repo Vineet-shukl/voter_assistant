@@ -83,6 +83,16 @@ _SECURITY_HEADERS: dict = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "strict-origin-when-cross-origin",
+    # CSP: allow resources only from same origin and trusted CDNs used by the app.
+    "Content-Security-Policy": (
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net https://www.gstatic.com; "
+        "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com; "
+        "img-src 'self' data:; "
+        "frame-ancestors 'none';"
+    ),
 }
 
 # Public CORS header used for endpoints that serve no sensitive user data.

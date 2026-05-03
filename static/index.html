@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>VoteWise India — Election Assistant</title>
     <meta name="description" content="VoteWise India helps citizens understand Indian elections, voter registration, EPIC card, ECI guidelines, and state election schedules.">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#1a56db" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <link rel="canonical" href="https://voterwise-c0186.web.app/">
     <!-- Open Graph -->
     <meta property="og:title" content="VoteWise India — Election Assistant">
     <meta property="og:description" content="Non-partisan AI guide to Indian elections powered by ECI data. Voter registration, EPIC card, election dates, and more.">
@@ -48,7 +52,7 @@
         <aside class="sidebar" id="sidebar" role="complementary" aria-label="Sidebar: state selector, eligibility check, and quick links">
             <div class="sidebar-header">
                 <span class="logo">🗳️ VoteWise India</span>
-                <button id="sidebar-close" class="icon-btn" aria-label="Close sidebar">✕</button>
+                <button id="sidebar-close" class="icon-btn" aria-label="Close sidebar" aria-expanded="true" aria-controls="sidebar">✕</button>
             </div>
 
             <div class="sidebar-section">
@@ -126,7 +130,7 @@
         <!-- ===== MAIN CHAT ===== -->
         <div class="main-panel" id="main-content" role="main">
             <header class="app-header">
-                <button id="sidebar-open" class="icon-btn" aria-label="Open menu">☰</button>
+                <button id="sidebar-open" class="icon-btn" aria-label="Open sidebar menu" aria-expanded="false" aria-controls="sidebar">☰</button>
                 <div class="header-title">
                     <h1>🗳️ VoteWise India</h1>
                     <span class="subtitle" id="state-badge" data-i18n="poweredBy">Powered by ECI Data</span>
@@ -138,7 +142,7 @@
             </header>
 
             <!-- ===== TOP QUICK NAVIGATOR ===== -->
-            <nav class="top-nav" aria-label="Quick navigation">
+            <nav class="top-nav" aria-label="Main navigation shortcuts">
                 <select id="lang-select" aria-label="Choose language" title="Language">
                     <option value="en">🌐 English</option>
                     <option value="hi">हिन्दी</option>

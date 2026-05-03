@@ -1,5 +1,13 @@
+'use strict';
 /* ===== CONFIG ===== */
-const CACHE_VERSION="v3",CACHE_TTL_MS=6e5,DEBOUNCE_MS=300;
+/** @type {string} Session-scoped client cache version key */
+const CACHE_VERSION = 'v3';
+/** @type {number} Client-side cache TTL in milliseconds (10 minutes) */
+const CACHE_TTL_MS = 6e5;
+/** @type {number} Debounce delay for form submit in milliseconds */
+const DEBOUNCE_MS = 300;
+/** @type {number} Maximum message length enforced client-side (mirrors backend) */
+const MAX_MESSAGE_LEN = 500;
 
 /* ===== ELEMENTS ===== */
 const $=id=>document.getElementById(id);
@@ -31,20 +39,26 @@ const UI_STRINGS={
 /* ===== LANGUAGE NAMES (for Gemini prompt) ===== */
 const LANG_NAMES={en:"English",hi:"Hindi",bn:"Bengali",te:"Telugu",mr:"Marathi",ta:"Tamil",ur:"Urdu",gu:"Gujarati",kn:"Kannada",ml:"Malayalam",or:"Odia",pa:"Punjabi",as:"Assamese",mai:"Maithili",sa:"Sanskrit",ne:"Nepali",sd:"Sindhi",ks:"Kashmiri",doi:"Dogri",kok:"Konkani",mni:"Manipuri",sat:"Santali",bo:"Bodo"};
 
-/* ===== APPLY LANGUAGE ===== */
+/**
+ * Applies a UI language to all i18n-annotated DOM elements.
+ * Also updates the <html lang> attribute and persists the choice.
+ * @param {string} lang - BCP 47 language code (e.g. 'hi', 'bn').
+ */
 function applyLang(lang){
   currentLang=lang;
+  // Update the HTML lang attribute for screen readers
+  document.documentElement.lang = lang;
   const s=UI_STRINGS[lang]||{};
-  document.querySelectorAll("[data-i18n]").forEach(el=>{
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
     const key=el.dataset.i18n;
     if(s[key]) el.innerHTML=s[key];
   });
-  document.querySelectorAll("[data-i18n-ph]").forEach(el=>{
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{
     const key=el.dataset.i18nPh;
     if(s[key]) el.placeholder=s[key];
   });
-  conversationContext.language=LANG_NAMES[lang]||"English";
-  localStorage.setItem("vw-lang",lang);
+  conversationContext.language=LANG_NAMES[lang]||'English';
+  localStorage.setItem('vw-lang',lang);
 }
 
 /* ===== THEME ===== */
@@ -102,40 +116,90 @@ checkBtn.addEventListener("click",async()=>{
   }
 });
 
-/* ===== CACHE ===== */
+/**
+ * Returns the session-storage cache key for a message.
+ * @param {string} m - The user message string.
+ * @returns {string} Cache key.
+ */
 const cacheKey=m=>`${CACHE_VERSION}:${m.trim().toLowerCase()}`;
+
+/**
+ * Reads a cached API response from sessionStorage.
+ * @param {string} m - The user message string.
+ * @returns {Object|null} Cached data object or null on miss/expiry.
+ */
 const getCache=m=>{try{const r=sessionStorage.getItem(cacheKey(m));if(!r)return null;const{data,ts}=JSON.parse(r);if(Date.now()-ts>CACHE_TTL_MS){sessionStorage.removeItem(cacheKey(m));return null}return data}catch{return null}};
+
+/**
+ * Writes an API response to sessionStorage cache.
+ * @param {string} m - The user message string.
+ * @param {Object} d - The response data to cache.
+ */
 const setCache=(m,d)=>{try{sessionStorage.setItem(cacheKey(m),JSON.stringify({data:d,ts:Date.now()}))}catch{}};
 
 /* ===== UI HELPERS ===== */
-const scrollBottom=()=>chatLog.scrollTo({top:chatLog.scrollHeight,behavior:"smooth"});
-const escapeHtml=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+/** Scrolls the chat log to the latest message. */
+const scrollBottom=()=>chatLog.scrollTo({top:chatLog.scrollHeight,behavior:'smooth'});
 
-function appendUser(t){const r=document.createElement("div");r.className="msg-row user";r.innerHTML=`<div class="bubble user-bubble">${escapeHtml(t)}</div>`;chatLog.appendChild(r);scrollBottom()}
+/**
+ * Escapes HTML special characters to prevent XSS in user-supplied text.
+ * @param {string} s - Raw string to escape.
+ * @returns {string} HTML-safe string.
+ */
+const escapeHtml=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-function appendBot(t,src="ai"){const r=document.createElement("div");r.className="msg-row bot";
-  const badge=src==="local"?`<span class="source-badge local">⚡ instant</span>`:`<span class="source-badge ai">🤖 AI</span>`;
-  r.innerHTML=`<div class="avatar">🗳️</div><div class="bubble bot-bubble">${marked.parse(t)}<div class="msg-meta">${badge}</div></div>`;
+/**
+ * Appends a user message bubble to the chat log.
+ * @param {string} t - The user message text.
+ */
+function appendUser(t){const r=document.createElement('div');r.className='msg-row user';r.setAttribute('role','listitem');r.innerHTML=`<div class="bubble user-bubble">${escapeHtml(t)}</div>`;chatLog.appendChild(r);scrollBottom()}
+
+/**
+ * Appends a bot response bubble with source badge and markdown rendering.
+ * @param {string} t - The bot reply text (Markdown supported).
+ * @param {string} [src='ai'] - Source label: 'local', 'cache', or 'ai'.
+ */
+function appendBot(t,src='ai'){const r=document.createElement('div');r.className='msg-row bot';r.setAttribute('role','listitem');
+  const badge=src==='local'?`<span class="source-badge local">⚡ instant</span>`:`<span class="source-badge ai">🤖 AI</span>`;
+  r.innerHTML=`<div class="avatar" aria-hidden="true">🗳️</div><div class="bubble bot-bubble">${marked.parse(t)}<div class="msg-meta">${badge}</div></div>`;
   chatLog.appendChild(r);scrollBottom()}
 
+/**
+ * Renders follow-up question chips below the latest bot reply.
+ * @param {string[]} chips - Array of follow-up question strings.
+ */
 function setFollowups(chips){followupsContainer.innerHTML="";chips.slice(0,3).forEach(t=>{const b=document.createElement("button");b.className="followup-chip";b.textContent=t;b.addEventListener("click",()=>sendMessage(t));followupsContainer.appendChild(b)})}
 
-/* ===== FOLLOW-UP PICKER ===== */
+/**
+ * Returns contextually relevant follow-up question chips based on the reply.
+ * @param {string} r - The bot reply text.
+ * @returns {string[]} Array of 3 follow-up questions.
+ */
 function pick_followups(r){const l=r.toLowerCase();
-  if(l.includes("form 6")||l.includes("register"))return["What documents for Form 6?","Can I register online?","Where is my BLO?"];
-  if(l.includes("epic")||l.includes("voter id"))return["How to get e-EPIC?","How to correct Voter ID?","Lost my Voter ID?"];
-  if(l.includes("evm")||l.includes("vvpat"))return["Is EVM safe?","What is VVPAT?","How to use EVM?"];
-  if(l.includes("unable")||l.includes("cannot vote"))return["How to register now?","Name not on list?","What ID do I need?"];
-  if(l.includes("lok sabha"))return["What is Vidhan Sabha?","How many Lok Sabha seats?","Next general election?"];
-  return["How do I register?","What is EPIC?","Find my polling booth?"];}
+  if(l.includes('form 6')||l.includes('register'))return['What documents for Form 6?','Can I register online?','Where is my BLO?'];
+  if(l.includes('epic')||l.includes('voter id'))return['How to get e-EPIC?','How to correct Voter ID?','Lost my Voter ID?'];
+  if(l.includes('evm')||l.includes('vvpat'))return['Is EVM safe?','What is VVPAT?','How to use EVM?'];
+  if(l.includes('unable')||l.includes('cannot vote'))return['How to register now?','Name not on list?','What ID do I need?'];
+  if(l.includes('lok sabha'))return['What is Vidhan Sabha?','How many Lok Sabha seats?','Next general election?'];
+  return['How do I register?','What is EPIC?','Find my polling booth?'];}
 
-/* ===== SEND MESSAGE ===== */
+/**
+ * Sends a user message through the 3-tier response pipeline.
+ * Checks client-side cache first, then calls the /chat Cloud Function.
+ * Handles Firebase Analytics/Performance tracing and graceful error display.
+ * @param {string} text - The message text to send.
+ * @returns {Promise<void>}
+ */
 async function sendMessage(text){
-  text=text.trim();if(!text||isSending)return;
-  appendUser(text);followupsContainer.innerHTML="";userInput.value="";
+  text=text.trim().slice(0,MAX_MESSAGE_LEN);if(!text||isSending)return;
+  appendUser(text);followupsContainer.innerHTML='';userInput.value='';
   const cached=getCache(text);
-  if(cached){appendBot(cached.reply,"local");setFollowups(cached.suggested_followups||[]);return}
-  isSending=true;typingIndicator.classList.remove("hidden");scrollBottom();
+  if(cached){appendBot(cached.reply,'local');setFollowups(cached.suggested_followups||[]);return}
+  isSending=true;
+  // Disable send button and signal busy state to assistive technologies
+  const sendBtn=document.getElementById('send-btn');
+  if(sendBtn){sendBtn.disabled=true;sendBtn.setAttribute('aria-disabled','true');}
+  typingIndicator.classList.remove('hidden');scrollBottom();
 
   // ― Firebase Analytics: log each question ―
   if(window.__firebase?.logEvent && window.__firebase?.analytics){
@@ -188,6 +252,8 @@ async function sendMessage(text){
   }
   finally{
     isSending=false;
+    // Re-enable send button
+    if(sendBtn){sendBtn.disabled=false;sendBtn.setAttribute('aria-disabled','false');}
     try{perfTrace?.stop();}catch(_){}
   }
 }
