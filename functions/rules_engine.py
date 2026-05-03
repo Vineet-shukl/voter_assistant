@@ -1,21 +1,58 @@
+"""
+VoteWise India — Election rules engine and local knowledge base.
+
+Provides three public functions used by the Cloud Functions layer:
+    - ``find_local_answer`` — keyword-matched instant answers (zero AI cost)
+    - ``check_eligibility`` — India-specific voter eligibility evaluator
+    - ``get_deadlines``     — State-level election timeline lookup
+    - ``get_state_rules``   — State-level voting rules and metadata
+
+All election data is loaded from ``data/election_data.json`` at module import
+time and stored in the module-level ``ELECTION_DATA`` dict for fast O(1)
+lookups without any I/O on the hot path.
+"""
+
 import json
 import os
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-DATA_FILE_PATH = os.path.join(os.path.dirname(__file__), 'data', 'election_data.json')
+__all__ = [
+    "ELECTION_DATA",
+    "LOCAL_ANSWERS",
+    "find_local_answer",
+    "check_eligibility",
+    "get_deadlines",
+    "get_state_rules",
+]
+
+# Absolute path to the bundled election data file.
+DATA_FILE_PATH: str = os.path.join(os.path.dirname(__file__), "data", "election_data.json")
+
 
 def load_data() -> Dict[str, Any]:
+    """Loads election data from the bundled JSON file.
+
+    Returns:
+        A dict containing ``states``, ``general_faqs``, and ``general_info``
+        keys. Returns an empty-structure dict if the file is missing.
+    """
     try:
-        with open(DATA_FILE_PATH, 'r', encoding='utf-8') as f:
+        with open(DATA_FILE_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
         return {"states": {}, "general_faqs": [], "general_info": {}}
 
-ELECTION_DATA = load_data()
+
+# Module-level singleton — loaded once at import time for zero per-request I/O.
+ELECTION_DATA: Dict[str, Any] = load_data()
+
 
 # ---------------------------------------------------------------------------
-# Local keyword-answer map for India — zero API tokens for these queries
+# Local keyword-answer map for India — zero API tokens for these common queries
 # ---------------------------------------------------------------------------
+# Each entry maps a topic key to a (keywords_list, answer_markdown) tuple.
+# The first keyword that appears (substring) in the lowercased user message
+# wins. Entries are evaluated in insertion order.
 LOCAL_ANSWERS: Dict[str, tuple[list[str], str]] = {
     "age_requirement": (
         ["how old", "age to vote", "minimum age", "age requirement", "old enough", "kitni age"],
@@ -30,7 +67,6 @@ LOCAL_ANSWERS: Dict[str, tuple[list[str], str]] = {
             "how to register", "how do i register", "register to vote", "voter registration",
             "naama darz", "form 6", "enrollment", "enroll", "register myself",
             "get registered", "sign up to vote", "apply for voter",
-            # missed/late registration queries
             "forgot to register", "forget to register", "forgot register",
             "missed registration", "missed to register", "didn't register",
             "did not register", "haven't registered", "not registered yet",
@@ -147,8 +183,21 @@ LOCAL_ANSWERS: Dict[str, tuple[list[str], str]] = {
     ),
 }
 
+
 def find_local_answer(message: str) -> Optional[str]:
-    """Returns a pre-built local answer or None (triggering Gemini call)."""
+    """Returns a pre-built local answer for the given message, or ``None``.
+
+    Iterates over ``LOCAL_ANSWERS`` in insertion order and returns the answer
+    for the first topic whose keyword list contains any substring present in
+    the lowercased message. If no keyword matches, returns ``None`` to signal
+    that the caller should escalate to the AI layer.
+
+    Args:
+        message: The raw user message string.
+
+    Returns:
+        A Markdown-formatted answer string on a match, or ``None`` on a miss.
+    """
     lower = message.lower()
     for _key, (keywords, answer) in LOCAL_ANSWERS.items():
         if any(kw in lower for kw in keywords):
@@ -157,18 +206,42 @@ def find_local_answer(message: str) -> Optional[str]:
 
 
 def check_eligibility(age: int, citizen: bool, state: str) -> Dict[str, Any]:
-    """India-specific voter eligibility check."""
+    """Evaluates whether a person is eligible to vote in Indian elections.
+
+    Checks the two fundamental eligibility criteria defined by the
+    Representation of the People Act, 1951:
+        1. Minimum age of 18 years.
+        2. Indian citizenship.
+
+    Args:
+        age: The voter's age in years (must be 0–150; enforced by the caller).
+        citizen: ``True`` if the user claims Indian citizenship.
+        state: The 2-letter Indian state/UT code (accepted but not used in the
+            current eligibility model — reserved for future state-specific rules).
+
+    Returns:
+        A dict with keys:
+            - ``eligible`` (bool): Overall eligibility verdict.
+            - ``reasons`` (list[str]): Human-readable reason strings.
+            - ``next_steps`` (list[str]): Suggested actions for the user.
+    """
     eligible = True
-    reasons = []
-    next_steps = []
+    reasons: list[str] = []
+    next_steps: list[str] = []
 
     if not citizen:
         eligible = False
-        reasons.append("केवल भारतीय नागरिक मतदान कर सकते हैं। (Only Indian citizens can vote in Indian elections.)")
+        reasons.append(
+            "केवल भारतीय नागरिक मतदान कर सकते हैं। "
+            "(Only Indian citizens can vote in Indian elections.)"
+        )
 
     if age < 18:
         eligible = False
-        reasons.append(f"आप {age} वर्ष के हैं। भारत में मतदान के लिए न्यूनतम आयु 18 वर्ष है। (Minimum age is 18 years.)")
+        reasons.append(
+            f"आप {age} वर्ष के हैं। भारत में मतदान के लिए न्यूनतम आयु 18 वर्ष है। "
+            "(Minimum age is 18 years.)"
+        )
 
     if eligible:
         reasons.append("✅ You meet the basic age and citizenship requirements to vote in India.")
@@ -183,11 +256,30 @@ def check_eligibility(age: int, citizen: bool, state: str) -> Dict[str, Any]:
 
 
 def get_deadlines(state: str) -> Dict[str, Any]:
-    """Returns election schedule for a given Indian state code."""
+    """Returns the election schedule and key dates for a given Indian state/UT.
+
+    Looks up the state code in ``ELECTION_DATA["states"]`` and returns a flat
+    dict of election timeline fields. Returns an error dict if the code is not
+    found in the dataset.
+
+    Args:
+        state: A 2-letter Indian state/UT code (e.g. ``"DL"``, ``"MH"``).
+            Case-insensitive — normalised to upper case internally.
+
+    Returns:
+        A dict with keys ``state_name``, ``last_election_date``,
+        ``next_election_due``, ``enrollment_deadline``, and ``notes`` on
+        success, or ``{"error": "<message>"}`` if the state code is unknown.
+    """
     state_upper = state.upper()
     state_data = ELECTION_DATA.get("states", {}).get(state_upper)
     if not state_data:
-        return {"error": f"No data found for state code: {state_upper}. Supported: DL, BR, WB, TN, KL, AS, UP, MH, GJ, RJ, KA, MP, PB"}
+        return {
+            "error": (
+                f"No data found for state code: {state_upper}. "
+                "Supported: DL, BR, WB, TN, KL, AS, UP, MH, GJ, RJ, KA, MP, PB"
+            )
+        }
     return {
         "state_name": state_data.get("name"),
         "last_election_date": state_data.get("last_election_date"),
@@ -198,7 +290,21 @@ def get_deadlines(state: str) -> Dict[str, Any]:
 
 
 def get_state_rules(state: str) -> Dict[str, Any]:
-    """Returns voting rules for a given Indian state code."""
+    """Returns the voting rules and metadata for a given Indian state/UT.
+
+    Looks up state data and returns assembly composition, total seat count,
+    EPIC requirement flag, accepted alternative IDs, and official URLs.
+
+    Args:
+        state: A 2-letter Indian state/UT code (e.g. ``"KA"``, ``"GJ"``).
+            Case-insensitive — normalised to upper case internally.
+
+    Returns:
+        A dict with keys ``state_name``, ``assembly``, ``total_seats``,
+        ``epic_required``, ``alternative_ids_accepted``, ``official_url``,
+        and ``eci_helpline`` on success, or ``{"error": "<message>"}`` if
+        the state code is unknown.
+    """
     state_upper = state.upper()
     state_data = ELECTION_DATA.get("states", {}).get(state_upper)
     if not state_data:

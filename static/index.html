@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>VoteWise India — Election Assistant</title>
     <meta name="description" content="VoteWise India helps citizens understand Indian elections, voter registration, EPIC card, ECI guidelines, and state election schedules.">
+    <!-- Open Graph -->
+    <meta property="og:title" content="VoteWise India — Election Assistant">
+    <meta property="og:description" content="Non-partisan AI guide to Indian elections powered by ECI data. Voter registration, EPIC card, election dates, and more.">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="en_IN">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="VoteWise India">
+    <meta name="twitter:description" content="Non-partisan AI guide to Indian elections powered by ECI data.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,21 +29,31 @@
     <script type="module" src="/firebase-init.js"></script>
 </head>
 <body>
-    <div class="bg-blob blob-1"></div>
-    <div class="bg-blob blob-2"></div>
-    <div class="bg-blob blob-3"></div>
+    <!-- Skip navigation link for keyboard and screen-reader users -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <div class="bg-blob blob-1" aria-hidden="true"></div>
+    <div class="bg-blob blob-2" aria-hidden="true"></div>
+    <div class="bg-blob blob-3" aria-hidden="true"></div>
+
+    <noscript>
+        <p style="text-align:center;padding:2rem;font-family:sans-serif">
+            VoteWise India requires JavaScript. For voter information, visit
+            <a href="https://eci.gov.in">eci.gov.in</a> or call <strong>1950</strong>.
+        </p>
+    </noscript>
 
     <div class="app-shell">
         <!-- ===== SIDEBAR ===== -->
-        <aside class="sidebar" id="sidebar">
+        <aside class="sidebar" id="sidebar" role="complementary" aria-label="Sidebar: state selector, eligibility check, and quick links">
             <div class="sidebar-header">
                 <span class="logo">🗳️ VoteWise India</span>
                 <button id="sidebar-close" class="icon-btn" aria-label="Close sidebar">✕</button>
             </div>
 
             <div class="sidebar-section">
-                <p class="sidebar-label" data-i18n="selectState">Select your State / UT</p>
-                <select id="state-select" aria-label="Select state">
+                <label class="sidebar-label" for="state-select" data-i18n="selectState">Select your State / UT</label>
+                <select id="state-select" aria-label="Select your state or Union Territory">
                     <option value="" data-i18n-val="chooseState">— Choose a State / UT —</option>
                     <optgroup label="Recent Elections (2026)">
                         <option value="WB">West Bengal</option>
@@ -59,16 +78,22 @@
             </div>
 
             <div class="sidebar-section">
-                <p class="sidebar-label" data-i18n="quickEligibility">Quick Eligibility Check</p>
-                <div id="eligibility-form">
-                    <input type="number" id="age-input" placeholder="Your age (18+)" min="0" max="120" aria-label="Enter your age" data-i18n-ph="agePlaceholder">
-                    <label class="checkbox-row">
-                        <input type="checkbox" id="citizen-check" aria-label="I am an Indian citizen">
+                <p class="sidebar-label" id="eligibility-heading" data-i18n="quickEligibility">Quick Eligibility Check</p>
+                <div id="eligibility-form" role="group" aria-labelledby="eligibility-heading">
+                    <label for="age-input" class="sr-only">Your age</label>
+                    <input type="number" id="age-input" placeholder="Your age (18+)" min="0" max="120"
+                        aria-required="true"
+                        aria-describedby="age-hint"
+                        data-i18n-ph="agePlaceholder">
+                    <span id="age-hint" class="sr-only">Minimum 18 years required to vote in India</span>
+                    <label class="checkbox-row" for="citizen-check">
+                        <input type="checkbox" id="citizen-check">
                         <span data-i18n="citizenLabel">I'm an Indian citizen</span>
                     </label>
-                    <button id="check-eligibility-btn" class="pill-btn" data-i18n="checkEligibility">Check Eligibility</button>
+                    <button id="check-eligibility-btn" class="pill-btn" data-i18n="checkEligibility"
+                        aria-controls="eligibility-result">Check Eligibility</button>
                 </div>
-                <div id="eligibility-result" class="hidden"></div>
+                <div id="eligibility-result" class="hidden" role="status" aria-live="polite"></div>
             </div>
 
             <div class="sidebar-section">
@@ -99,7 +124,7 @@
         </aside>
 
         <!-- ===== MAIN CHAT ===== -->
-        <div class="main-panel">
+        <div class="main-panel" id="main-content" role="main">
             <header class="app-header">
                 <button id="sidebar-open" class="icon-btn" aria-label="Open menu">☰</button>
                 <div class="header-title">
@@ -169,25 +194,33 @@
                     </div>
                 </div>
 
-                <div id="typing-indicator" class="msg-row bot hidden">
-                    <div class="avatar">🗳️</div>
-                    <div class="bubble bot-bubble typing">
+                <div id="typing-indicator" class="msg-row bot hidden"
+                    role="status" aria-live="polite" aria-label="VoteWise India is typing">
+                    <div class="avatar" aria-hidden="true">🗳️</div>
+                    <div class="bubble bot-bubble typing" aria-hidden="true">
                         <span class="dot"></span><span class="dot"></span><span class="dot"></span>
                     </div>
                 </div>
 
-                <div id="followups-container" role="group" aria-label="Suggested questions"></div>
+                <div id="followups-container" role="group" aria-label="Suggested follow-up questions"></div>
             </div>
 
-            <form id="chat-form" class="input-bar">
+            <form id="chat-form" class="input-bar" role="search" aria-label="Ask VoteWise India">
+                <label for="user-input" class="sr-only">Your question</label>
                 <input type="text" id="user-input"
                     placeholder="Ask about voter registration, EPIC card, election dates…"
                     autocomplete="off"
-                    aria-label="Type your question"
+                    aria-label="Type your question about Indian elections"
+                    aria-required="true"
                     maxlength="500"
                     data-i18n-ph="inputPlaceholder">
-                <button type="submit" id="send-btn" aria-label="Send">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                <button type="submit" id="send-btn" aria-label="Send your question">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true" focusable="false">
+                        <line x1="22" y1="2" x2="11" y2="13"/>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
                 </button>
             </form>
         </div>
